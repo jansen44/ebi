@@ -6,4 +6,3 @@ edition = "2021"
 [dependencies]
 libloading = "0.7"
 ebi_source = { path = "../sources/ebi_source" }
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

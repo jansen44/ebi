@@ -1,26 +1,28 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
 use std::borrow::Cow;
 
 use ebi_source::{Chapter, Manga, Result, Source as EbiSource};
 
-const OPEX_SOURCE_IDENTIFIER: &str = "opex";
-const OPEX_SOURCE_TITLE: &str = "One Piece Ex";
-const OPEX_SOURCE_DESCRIPTION: &str = "One Piece Ex | De fã para fã";
-const _OPEX_BASE_URL: &str = "https://onepieceex.net";
+const SOURCE_IDENTIFIER: &str = "opex";
+const SOURCE_TITLE: &str = "One Piece Ex";
+const SOURCE_DESCRIPTION: &str = "One Piece Ex | De fã para fã";
+const _BASE_URL: &str = "https://onepieceex.net";
 
 pub struct Source;
 
 #[async_trait::async_trait]
 impl EbiSource for Source {
     fn identifier(&self) -> Cow<str> {
-        Cow::Borrowed(OPEX_SOURCE_IDENTIFIER)
+        Cow::Borrowed(SOURCE_IDENTIFIER)
     }
 
     fn title(&self) -> Cow<str> {
-        Cow::Borrowed(OPEX_SOURCE_TITLE)
+        Cow::Borrowed(SOURCE_TITLE)
     }
 
     fn description(&self) -> Cow<str> {
-        Cow::Borrowed(OPEX_SOURCE_DESCRIPTION)
+        Cow::Borrowed(SOURCE_DESCRIPTION)
     }
 
     async fn manga_list(&self) -> Result<Vec<Manga>> {
@@ -31,7 +33,7 @@ impl EbiSource for Source {
             url: String::from("/mangas"),
             genre: vec![String::from("shounen"), String::from("fantasy")],
             description: None,
-            source_identifier: OPEX_SOURCE_IDENTIFIER.to_string(),
+            source_identifier: SOURCE_IDENTIFIER.to_string(),
         };
 
         let cover = Manga {
@@ -41,7 +43,7 @@ impl EbiSource for Source {
             url: String::from("/historias-de-capa"),
             genre: vec![String::from("shounen"), String::from("fantasy")],
             description: None,
-            source_identifier: OPEX_SOURCE_IDENTIFIER.to_string(),
+            source_identifier: SOURCE_IDENTIFIER.to_string(),
         };
 
         let sbs = Manga {
@@ -51,7 +53,7 @@ impl EbiSource for Source {
             url: String::from("/sbs"),
             genre: vec![String::from("shounen"), String::from("fantasy")],
             description: None,
-            source_identifier: OPEX_SOURCE_IDENTIFIER.to_string(),
+            source_identifier: SOURCE_IDENTIFIER.to_string(),
         };
 
         Ok(vec![main.into(), cover.into(), sbs.into()])
@@ -88,8 +90,4 @@ impl EbiSource for Source {
     }
 }
 
-#[no_mangle]
-pub fn register() -> Box<dyn EbiSource> {
-    let s = Source {};
-    Box::new(s)
-}
+ebi_source::register_source!();

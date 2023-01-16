@@ -1,5 +1,21 @@
 use std::borrow::Cow;
 
+pub const REGISTER_FUNCTION_NAME: &[u8] = b"register";
+
+#[macro_export]
+macro_rules! register_source {
+    () => {
+        // Unique source alias
+        use ebi_source::Source as EbiMacroSource;
+
+        #[no_mangle]
+        pub fn register() -> Box<dyn EbiMacroSource> {
+            let s = Source {};
+            Box::new(s)
+        }
+    };
+}
+
 // TODO: Remove anyhow and use custom result
 pub use anyhow::Result;
 
