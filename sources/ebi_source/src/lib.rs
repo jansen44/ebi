@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 // TODO: Remove anyhow and use custom result
 pub use anyhow::Result;
 
@@ -19,7 +21,7 @@ pub struct Manga {
     pub title: String,
     pub cover: String,
     pub url: String,
-    pub genre: Option<String>,
+    pub genre: Vec<String>,
     pub description: Option<String>,
     pub source_identifier: String,
 }
@@ -28,10 +30,10 @@ unsafe impl Sync for Manga {}
 unsafe impl Send for Manga {}
 
 #[async_trait::async_trait]
-pub trait TSource {
-    fn identifier(&self) -> String;
-    fn title(&self) -> String;
-    fn description(&self) -> String;
+pub trait Source {
+    fn identifier(&self) -> Cow<str>;
+    fn title(&self) -> Cow<str>;
+    fn description(&self) -> Cow<str>;
 
     async fn manga_list(&self) -> Result<Vec<Manga>>;
     async fn latest_manga(&self) -> Result<Vec<Manga>>;
