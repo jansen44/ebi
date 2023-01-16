@@ -1,4 +1,9 @@
+// TODO: Remove anyhow and use custom result
+pub use anyhow::Result;
+
 use std::borrow::Cow;
+
+pub mod locale;
 
 pub const REGISTER_FUNCTION_NAME: &[u8] = b"register";
 
@@ -15,9 +20,6 @@ macro_rules! register_source {
         }
     };
 }
-
-// TODO: Remove anyhow and use custom result
-pub use anyhow::Result;
 
 #[derive(Clone, Debug)]
 pub struct Chapter {
@@ -50,6 +52,7 @@ pub trait Source {
     fn identifier(&self) -> Cow<str>;
     fn title(&self) -> Cow<str>;
     fn description(&self) -> Cow<str>;
+    fn locale(&self) -> locale::Locale;
 
     async fn manga_list(&self) -> Result<Vec<Manga>>;
     async fn latest_manga(&self) -> Result<Vec<Manga>>;

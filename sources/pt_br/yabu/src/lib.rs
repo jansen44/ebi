@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 use std::borrow::Cow;
 
-use ebi_source::{Chapter, Manga, Result, Source as EbiSource};
+use ebi_source::{locale, Chapter, Manga, Result, Source as EbiSource};
 
 const SOURCE_IDENTIFIER: &str = "yabu";
 const SOURCE_TITLE: &str = "Manga Yabu";
@@ -23,6 +23,10 @@ impl EbiSource for Source {
 
     fn description(&self) -> Cow<str> {
         Cow::Borrowed(SOURCE_DESCRIPTION)
+    }
+
+    fn locale(&self) -> locale::Locale {
+        locale::Locale::PtBr
     }
 
     async fn manga_list(&self) -> Result<Vec<Manga>> {
