@@ -1,7 +1,6 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
-use ebi_source::REGISTER_FUNCTION_NAME;
-pub use ebi_source::{Chapter, Manga, Source};
+pub use ebi_source::Source;
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -23,7 +22,7 @@ fn handle_source_file_extension(identifier: &str) -> PathBuf {
 
 pub struct SourceManager {
     dir_path: PathBuf,
-    loaded_sources: HashMap<String, Box<dyn Source>>,
+    pub loaded_sources: Vec<Source>,
 }
 
 impl SourceManager {
@@ -32,65 +31,77 @@ impl SourceManager {
 
         Self {
             dir_path,
-            loaded_sources: HashMap::new(),
+            loaded_sources: Vec::new(),
         }
     }
 
     // TODO: error handling
     pub fn load_source(&mut self, identifier: &str) -> Result<(), String> {
-        use libloading::{Library, Symbol};
-        use std::borrow::Cow;
-
         let file_name = handle_source_file_extension(identifier);
 
         let mut path = self.dir_path.clone();
         path.push(file_name);
 
         unsafe {
-            let source = Library::new(path).unwrap();
-            let register_func: Symbol<unsafe extern "C" fn() -> Box<dyn Source>> =
-                source.get(REGISTER_FUNCTION_NAME).unwrap();
+            use libloading::Library;
 
-            let source = register_func();
-            let identifier = match source.identifier() {
-                Cow::Owned(identifier) => identifier.clone(),
-                Cow::Borrowed(identifier) => identifier.to_string(),
-            };
+            let source_lib = Library::new(path).unwrap();
+            let source_fn = source_lib
+                .get::<extern "C" fn() -> Source>(b"source")
+                .unwrap();
 
-            self.loaded_sources.insert(identifier, source);
+            let source = source_fn();
+
+            self.loaded_sources.push(source);
 
             Ok(())
-        }
-    }
-
-    pub fn get_source(&self, identifier: &str) -> Option<&Box<dyn Source>> {
-        let source = self.loaded_sources.get(identifier);
-        match source {
-            Some(source) => Some(source),
-            None => None,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::ffi::CString;
+
+    use ebi_source::locale::Locale;
+
     #[test]
     fn load_opex_and_yabu_sources() {
         let mut source_manager = super::SourceManager::new("../target/debug");
         assert_eq!(source_manager.load_source("opex"), Ok(()));
         assert_eq!(source_manager.load_source("yabu"), Ok(()));
 
-        let opex_source = source_manager.get_source("opex");
-        let yabu_source = source_manager.get_source("yabu");
-        assert!(opex_source.is_some());
-        assert!(yabu_source.is_some());
+        assert!(!source_manager.loaded_sources.is_empty());
 
-        let opex_identifier = opex_source.unwrap().identifier();
-        let opex_identifier = opex_identifier.as_ref();
-        assert_eq!(opex_identifier, "opex");
+        let opex_source = source_manager.loaded_sources.get(0).unwrap();
+        let yabu_source = source_manager.loaded_sources.get(1).unwrap();
 
-        let yabu_identifier = yabu_source.unwrap().identifier();
-        let yabu_identifier = yabu_identifier.as_ref();
-        assert_eq!(yabu_identifier, "yabu");
+        let identifier = unsafe { CString::from_raw(opex_source.identifier) };
+        let title = unsafe { CString::from_raw(opex_source.title) };
+        let description = unsafe { CString::from_raw(opex_source.description) };
+
+        let identifier = identifier.to_string_lossy();
+        let title = title.to_string_lossy();
+        let description = description.to_string_lossy();
+        let locale = Locale::from(opex_source.locale);
+
+        assert_eq!(identifier, "opex");
+        assert_eq!(title, "One Piece Ex");
+        assert_eq!(description, "One Piece Ex | De fã para fã");
+        assert_eq!(locale, Locale::PtBr);
+
+        let identifier = unsafe { CString::from_raw(yabu_source.identifier) };
+        let title = unsafe { CString::from_raw(yabu_source.title) };
+        let description = unsafe { CString::from_raw(yabu_source.description) };
+
+        let identifier = identifier.to_string_lossy();
+        let title = title.to_string_lossy();
+        let description = description.to_string_lossy();
+        let locale = Locale::from(yabu_source.locale);
+
+        assert_eq!(identifier, "yabu");
+        assert_eq!(title, "Manga Yabu");
+        assert_eq!(description, "Manga Yabu! - Ler Mangás Online");
+        assert_eq!(locale, Locale::PtBr);
     }
 }
