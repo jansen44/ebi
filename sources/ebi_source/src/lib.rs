@@ -1,7 +1,4 @@
-use std::ffi::c_char;
-
-// TODO: Remove anyhow and use custom result
-pub use anyhow::Result;
+pub mod abi;
 pub mod locale;
 
 #[derive(Clone, Debug)]
@@ -24,12 +21,12 @@ pub struct Manga {
     pub source_identifier: String,
 }
 
-#[repr(C)]
+#[derive(Clone, Debug)]
 pub struct Source {
-    pub identifier: *mut c_char,
-    pub title: *mut c_char,
-    pub description: *mut c_char,
-    pub locale: u32,
+    pub identifier: String,
+    pub title: String,
+    pub description: String,
+    pub locale: locale::Locale,
 }
 
 // #[async_trait::async_trait]

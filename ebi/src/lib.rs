@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+pub use ebi_source::abi::source::ABISource;
 pub use ebi_source::Source;
 
 #[cfg(target_os = "macos")]
@@ -47,12 +48,12 @@ impl SourceManager {
 
             let source_lib = Library::new(path).unwrap();
             let source_fn = source_lib
-                .get::<extern "C" fn() -> Source>(b"source")
+                .get::<extern "C" fn() -> ABISource>(b"source")
                 .unwrap();
 
             let source = source_fn();
 
-            self.loaded_sources.push(source);
+            self.loaded_sources.push(source.into());
 
             Ok(())
         }
@@ -61,8 +62,6 @@ impl SourceManager {
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::CString;
-
     use ebi_source::locale::Locale;
 
     #[test]
@@ -71,37 +70,19 @@ mod tests {
         assert_eq!(source_manager.load_source("opex"), Ok(()));
         assert_eq!(source_manager.load_source("yabu"), Ok(()));
 
-        assert!(!source_manager.loaded_sources.is_empty());
+        assert_eq!(source_manager.loaded_sources.len(), 2);
 
         let opex_source = source_manager.loaded_sources.get(0).unwrap();
         let yabu_source = source_manager.loaded_sources.get(1).unwrap();
 
-        let identifier = unsafe { CString::from_raw(opex_source.identifier) };
-        let title = unsafe { CString::from_raw(opex_source.title) };
-        let description = unsafe { CString::from_raw(opex_source.description) };
+        assert_eq!(opex_source.identifier, "opex");
+        assert_eq!(opex_source.title, "One Piece Ex");
+        assert_eq!(opex_source.description, "One Piece Ex | De fã para fã");
+        assert_eq!(opex_source.locale, Locale::PtBr);
 
-        let identifier = identifier.to_string_lossy();
-        let title = title.to_string_lossy();
-        let description = description.to_string_lossy();
-        let locale = Locale::from(opex_source.locale);
-
-        assert_eq!(identifier, "opex");
-        assert_eq!(title, "One Piece Ex");
-        assert_eq!(description, "One Piece Ex | De fã para fã");
-        assert_eq!(locale, Locale::PtBr);
-
-        let identifier = unsafe { CString::from_raw(yabu_source.identifier) };
-        let title = unsafe { CString::from_raw(yabu_source.title) };
-        let description = unsafe { CString::from_raw(yabu_source.description) };
-
-        let identifier = identifier.to_string_lossy();
-        let title = title.to_string_lossy();
-        let description = description.to_string_lossy();
-        let locale = Locale::from(yabu_source.locale);
-
-        assert_eq!(identifier, "yabu");
-        assert_eq!(title, "Manga Yabu");
-        assert_eq!(description, "Manga Yabu! - Ler Mangás Online");
-        assert_eq!(locale, Locale::PtBr);
+        assert_eq!(yabu_source.identifier, "yabu");
+        assert_eq!(yabu_source.title, "Manga Yabu");
+        assert_eq!(yabu_source.description, "Manga Yabu! - Ler Mangás Online");
+        assert_eq!(yabu_source.locale, Locale::PtBr);
     }
 }

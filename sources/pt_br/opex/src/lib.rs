@@ -1,7 +1,5 @@
-// use ebi_source::{locale, Chapter, Manga, Result, Source as EbiSource};
+use ebi_source::abi::source::ABISource;
 use ebi_source::{locale, Source};
-
-use std::ffi::CString;
 
 const SOURCE_IDENTIFIER: &str = "opex";
 const SOURCE_TITLE: &str = "One Piece Ex";
@@ -9,17 +7,14 @@ const SOURCE_DESCRIPTION: &str = "One Piece Ex | De fã para fã";
 const _BASE_URL: &str = "https://onepieceex.net";
 
 #[no_mangle]
-extern "C" fn source() -> Source {
-    let identifier = CString::new(SOURCE_IDENTIFIER).unwrap();
-    let title = CString::new(SOURCE_TITLE).unwrap();
-    let description = CString::new(SOURCE_DESCRIPTION).unwrap();
-
-    Source {
-        identifier: identifier.into_raw(),
-        title: title.into_raw(),
-        description: description.into_raw(),
-        locale: locale::Locale::PtBr as u32,
-    }
+extern "C" fn source() -> ABISource {
+    let source = Source {
+        identifier: SOURCE_IDENTIFIER.to_owned(),
+        title: SOURCE_TITLE.to_owned(),
+        description: SOURCE_DESCRIPTION.to_owned(),
+        locale: locale::Locale::PtBr,
+    };
+    source.into()
 }
 
 // #[no_mangle]
