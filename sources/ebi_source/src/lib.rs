@@ -16,7 +16,7 @@ pub struct Manga {
     pub title: String,
     pub cover: String,
     pub url: String,
-    pub genre: Vec<String>,
+    pub genres: Vec<String>,
     pub description: Option<String>,
     pub source_identifier: String,
 }
