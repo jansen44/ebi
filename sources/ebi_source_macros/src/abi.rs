@@ -18,11 +18,13 @@ pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
         );
     }
 
+    let func_name: proc_macro2::TokenStream = format!("abi_{}", name.to_string()).parse().unwrap();
+
     let gen = quote::quote! {
         use ebi_source::abi::source::ABISource;
 
         #[no_mangle]
-        pub extern "C" fn abi_source() -> ABISource {
+        pub extern "C" fn #func_name() -> ABISource {
             let src = source();
             src.into()
         }
