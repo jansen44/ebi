@@ -42,6 +42,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ebi_source_macros"
+version = "0.1.0"
+dependencies = [
+ "ebi_source",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "libloading"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -55,8 +65,8 @@ dependencies = [
 name = "opex"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "ebi_source",
+ "ebi_source_macros",
 ]
 
 [[package]]
@@ -120,6 +130,6 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 name = "yabu"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "ebi_source",
+ "ebi_source_macros",
 ]

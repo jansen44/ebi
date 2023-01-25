@@ -8,5 +8,5 @@ name = "opex"
 crate-type=["dylib"]
 
 [dependencies]
-async-trait = "0.1"
 ebi_source = { path = "../../ebi_source" }
+ebi_source_macros = { path = "../../ebi_source_macros" }
