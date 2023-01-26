@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 libloading = "0.7"
-ebi_source = { path = "../sources/ebi_source" }
+ebi_source = { path = "../ebi_source" }
