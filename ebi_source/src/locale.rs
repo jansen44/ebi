@@ -4,24 +4,29 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Locale {
     Unknown = 0,
+    EnUs,
     PtBr,
 }
 
 impl std::convert::From<u32> for Locale {
     fn from(value: u32) -> Self {
         match value {
-            1 => Self::PtBr,
+            1 => Self::EnUs,
+            2 => Self::PtBr,
             _ => Self::Unknown,
         }
     }
 }
 
-impl std::convert::From<String> for Locale {
-    fn from(value: String) -> Self {
-        match value.as_ref() {
+impl std::str::FromStr for Locale {
+    type Err = ();
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Ok(match value {
+            "en_US" => Self::EnUs,
             "pt_BR" => Self::PtBr,
             _ => Self::Unknown,
-        }
+        })
     }
 }
 
@@ -32,6 +37,7 @@ impl std::fmt::Display for Locale {
             "{}",
             match self {
                 Self::Unknown => "unknown",
+                Self::EnUs => "en_US",
                 Self::PtBr => "pt_BR",
             }
         )
