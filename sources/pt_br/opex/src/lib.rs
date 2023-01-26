@@ -52,21 +52,25 @@ async fn manga_list() -> Vec<Manga> {
     vec![main.into(), cover.into(), sbs.into()]
 }
 
-// async fn latest_manga(&self) -> Result<Vec<Manga>> {
-//     self.manga_list().await
-// }
+#[ebi_plugin]
+async fn latest_manga() -> Vec<Manga> {
+    manga_list().await
+}
 
-// async fn popular_manga(&self) -> Result<Vec<Manga>> {
-//     self.manga_list().await
-// }
+#[ebi_plugin]
+async fn popular_manga() -> Vec<Manga> {
+    manga_list().await
+}
 
-// async fn hot_manga(&self) -> Result<Vec<Manga>> {
-//     self.manga_list().await
-// }
+#[ebi_plugin]
+async fn hot_manga() -> Vec<Manga> {
+    manga_list().await
+}
 
 // async fn search_manga(&self, manga_title: &str) -> Result<Vec<Manga>> {
 //     todo!()
 // }
+
 // async fn get_manga(&self, manga_identifier: &str) -> Result<Manga> {
 //     todo!()
 // }
