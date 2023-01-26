@@ -8,7 +8,7 @@ const SOURCE_DESCRIPTION: &str = "One Piece Ex | De fã para fã";
 const _BASE_URL: &str = "https://onepieceex.net";
 
 #[ebi_plugin]
-async fn source() -> Source {
+fn source() -> Source {
     Source {
         identifier: SOURCE_IDENTIFIER.to_owned(),
         title: SOURCE_TITLE.to_owned(),

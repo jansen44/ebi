@@ -18,3 +18,9 @@
 /// future. Until then, please, refrain from using this ABI implementation.
 pub mod manga;
 pub mod source;
+
+use async_ffi::FfiFuture;
+use std::ffi::c_char;
+
+pub type JSONResourceFn = extern "C" fn() -> *mut c_char;
+pub type AsyncJSONResourceFn = extern "C" fn() -> FfiFuture<*mut c_char>;

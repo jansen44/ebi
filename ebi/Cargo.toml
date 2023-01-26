@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+async-trait = "0.1"
 libloading = "0.7"
 ebi_source = { path = "../ebi_source" }
 

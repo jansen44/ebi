@@ -1,9 +1,8 @@
-use std::borrow::Borrow;
-use std::ffi::{c_char, CString};
-use std::path::PathBuf;
+mod source;
 
-use ebi_source::prelude::{async_ffi::FfiFuture, serde_json};
-use ebi_source::Source;
+use std::{collections::HashMap, path::PathBuf};
+
+use source::Source;
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -25,7 +24,7 @@ fn handle_source_file_extension(identifier: &str) -> PathBuf {
 
 pub struct SourceManager {
     dir_path: PathBuf,
-    pub loaded_sources: Vec<Source>,
+    pub sources: HashMap<String, Source>,
 }
 
 impl SourceManager {
@@ -34,66 +33,45 @@ impl SourceManager {
 
         Self {
             dir_path,
-            loaded_sources: Vec::new(),
+            sources: HashMap::new(),
         }
     }
 
-    // TODO: error handling
-    pub async fn load_source(&mut self, identifier: &str) -> Result<(), String> {
+    pub fn load_source(&mut self, identifier: &str) -> Result<(), String> {
         let file_name = handle_source_file_extension(identifier);
 
         let mut path = self.dir_path.clone();
         path.push(file_name);
 
-        unsafe {
-            use libloading::Library;
+        let source = Source::try_from(path).unwrap();
+        let identifier = source.source.identifier.clone();
+        self.sources.insert(identifier, source);
 
-            let source_lib = Library::new(path).unwrap();
-            let source_fn = source_lib
-                .get::<extern "C" fn() -> FfiFuture<*mut c_char>>(b"abi_source")
-                .unwrap();
-
-            let source = source_fn().await;
-            let source = CString::from_raw(source);
-            let source = source.to_string_lossy();
-
-            let source = serde_json::from_str(source.borrow()).unwrap();
-            self.loaded_sources.push(source);
-
-            let manga_fn = source_lib
-                .get::<extern "C" fn() -> FfiFuture<*mut c_char>>(b"abi_manga_list")
-                .unwrap();
-
-            let manga = manga_fn().await;
-            let manga = CString::from_raw(manga);
-            let manga = manga.to_string_lossy();
-
-            let manga_lst: Vec<ebi_source::Manga> = serde_json::from_str(manga.borrow()).unwrap();
-            for manga in manga_lst.iter() {
-                println!("{} -- {} -- {}", manga.identifier, manga.title, manga.cover);
-            }
-
-            Ok(())
-        }
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use ebi_source::locale::Locale;
-    use pollster::FutureExt as _;
 
     #[test]
     fn load_opex_and_yabu_sources() {
         let mut source_manager = super::SourceManager::new("../target/debug");
 
-        assert_eq!(source_manager.load_source("opex").block_on(), Ok(()));
-        assert_eq!(source_manager.load_source("yabu").block_on(), Ok(()));
+        let opex_identifier = "opex";
+        let yabu_identifier = "yabu";
 
-        assert_eq!(source_manager.loaded_sources.len(), 2);
+        assert_eq!(source_manager.load_source(opex_identifier), Ok(()));
+        assert_eq!(source_manager.load_source(yabu_identifier), Ok(()));
 
-        let opex_source = source_manager.loaded_sources.get(0).unwrap();
-        let yabu_source = source_manager.loaded_sources.get(1).unwrap();
+        assert_eq!(source_manager.sources.len(), 2);
+
+        let opex_source = source_manager.sources.get(opex_identifier).unwrap();
+        let yabu_source = source_manager.sources.get(yabu_identifier).unwrap();
+
+        let opex_source = opex_source.source.clone();
+        let yabu_source = yabu_source.source.clone();
 
         assert_eq!(opex_source.identifier, "opex");
         assert_eq!(opex_source.title, "One Piece Ex");

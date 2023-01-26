@@ -21,21 +21,36 @@ pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
     // TODO: Validate funcion name => allow only pre-defined functions
     let func_name: proc_macro2::TokenStream = format!("abi_{}", name.to_string()).parse().unwrap();
 
-    let gen = quote::quote! {
-        #[no_mangle]
-        pub extern "C" fn #func_name() -> async_ffi::FfiFuture<*mut ffi::c_char> {
-            use async_ffi::FutureExt;
-            use ffi::{c_char, CString};
+    let gen = match ast.sig.asyncness {
+        Some(_) => quote::quote! {
+            #[no_mangle]
+            pub extern "C" fn #func_name() -> async_ffi::FfiFuture<*mut ffi::c_char> {
+                use async_ffi::FutureExt;
+                use ffi::{c_char, CString};
 
-            async move {
-                let src = #name().await;
+                async move {
+                    let src = #name().await;
+                    let src = serde_json::to_string(&src).unwrap();
+                    let src = CString::new(src).unwrap();
+
+                    src.into_raw()
+                }
+                .into_ffi()
+            }
+        },
+        None => quote::quote! {
+            #[no_mangle]
+            pub extern "C" fn #func_name() -> *mut ffi::c_char {
+                use async_ffi::FutureExt;
+                use ffi::{c_char, CString};
+
+                let src = #name();
                 let src = serde_json::to_string(&src).unwrap();
                 let src = CString::new(src).unwrap();
 
                 src.into_raw()
             }
-            .into_ffi()
-        }
+        },
     };
 
     let gen: TokenStream = gen.into();
