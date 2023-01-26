@@ -14,21 +14,12 @@ jobs:
 
       - uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: -- --nocapture
+          command: build
 
-  build-release:
-    name: Ebi Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - name: LS
+        run: bash ls
 
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --release
+          command: test
+          args: -- --nocapture
