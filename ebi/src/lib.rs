@@ -1,7 +1,9 @@
+use std::borrow::Borrow;
+use std::ffi::{c_char, CString};
 use std::path::PathBuf;
 
-pub use ebi_source::abi::source::ABISource;
 pub use ebi_source::Source;
+pub use ebi_source::{serde_json, Deserialize};
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -48,11 +50,15 @@ impl SourceManager {
 
             let source_lib = Library::new(path).unwrap();
             let source_fn = source_lib
-                .get::<extern "C" fn() -> ABISource>(b"abi_source")
+                .get::<extern "C" fn() -> *mut c_char>(b"abi_source")
                 .unwrap();
 
             let source = source_fn();
-            self.loaded_sources.push(source.into());
+            let source = CString::from_raw(source);
+            let source = source.to_string_lossy();
+
+            let source = serde_json::from_str(source.borrow()).unwrap();
+            self.loaded_sources.push(source);
 
             // let manga_fn = source_lib
             //     .get::<extern "C" fn() -> ABIMangaList>(b"manga_list")

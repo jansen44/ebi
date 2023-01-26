@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
+use syn::ItemFn;
 
 pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
-    let ast = match syn::parse::<syn::ItemFn>(input.clone()) {
+    let ast = match syn::parse::<ItemFn>(input.clone()) {
         Ok(ast) => ast,
         // on parse error, make IDEs happy; see fn docs
         Err(err) => return input_and_compile_error(input, err),
@@ -21,12 +22,16 @@ pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
     let func_name: proc_macro2::TokenStream = format!("abi_{}", name.to_string()).parse().unwrap();
 
     let gen = quote::quote! {
-        use ebi_source::abi::source::ABISource;
+        use std::ffi::{c_char, CString};
+        use ebi_source::{Deserialize, Serialize, serde_json};
 
         #[no_mangle]
-        pub extern "C" fn #func_name() -> ABISource {
+        pub extern "C" fn #func_name() -> *mut c_char {
             let src = source();
-            src.into()
+            let src = serde_json::to_string(&src).unwrap();
+            let src = CString::new(src).unwrap();
+
+            src.into_raw()
         }
     };
 

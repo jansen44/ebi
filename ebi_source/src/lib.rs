@@ -1,7 +1,12 @@
-pub mod abi;
+pub use serde::{Deserialize, Serialize};
+pub use serde_json;
+
+#[allow(dead_code)]
+mod abi;
+
 pub mod locale;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Chapter {
     pub chapter: u16,
     pub title: String,
@@ -10,7 +15,7 @@ pub struct Chapter {
     pub source_identifier: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Manga {
     pub identifier: String,
     pub title: String,
@@ -21,7 +26,7 @@ pub struct Manga {
     pub source_identifier: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Source {
     pub identifier: String,
     pub title: String,

@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 #[repr(u32)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Locale {
     Unknown = 0,
     PtBr,
