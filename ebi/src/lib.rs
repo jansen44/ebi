@@ -19,7 +19,7 @@ fn handle_source_file_extension(identifier: &str) -> PathBuf {
 
 #[cfg(target_os = "linux")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
-    let file = format!("{}.so", identifier);
+    let file = format!("lib{}.so", identifier);
     PathBuf::from(file)
 }
 
