@@ -3,6 +3,12 @@
 version = 3
 
 [[package]]
+name = "async-ffi"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7e73758d044aab514155e8888ed142d408498712c6f82f24e3ee0650d5943b0"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14,12 +20,14 @@ version = "0.1.0"
 dependencies = [
  "ebi_source",
  "libloading",
+ "pollster",
 ]
 
 [[package]]
 name = "ebi_source"
 version = "0.1.0"
 dependencies = [
+ "async-ffi",
  "serde",
  "serde_json",
 ]
@@ -57,6 +65,12 @@ dependencies = [
  "ebi_source",
  "ebi_source_macros",
 ]
+
+[[package]]
+name = "pollster"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da3b0203fd7ee5720aa0b5e790b591aa5d3f41c3ed2c34a3a393382198af2f7"
 
 [[package]]
 name = "proc-macro2"

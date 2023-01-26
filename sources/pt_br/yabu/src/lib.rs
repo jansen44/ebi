@@ -1,4 +1,5 @@
-use ebi_source::{locale, Source};
+use ebi_source::prelude::*;
+use ebi_source::{locale, Manga, Source};
 use ebi_source_macros::ebi_plugin;
 
 const SOURCE_IDENTIFIER: &str = "yabu";
@@ -7,13 +8,18 @@ const SOURCE_DESCRIPTION: &str = "Manga Yabu! - Ler Mangás Online";
 const _BASE_URL: &str = "https://mangayabu.top";
 
 #[ebi_plugin]
-fn source() -> Source {
+async fn source() -> Source {
     Source {
         identifier: SOURCE_IDENTIFIER.to_owned(),
         title: SOURCE_TITLE.to_owned(),
         description: SOURCE_DESCRIPTION.to_owned(),
         locale: locale::Locale::PtBr,
     }
+}
+
+#[ebi_plugin]
+async fn manga_list() -> Vec<Manga> {
+    vec![]
 }
 
 // pub struct Source;

@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 libloading = "0.7"
 ebi_source = { path = "../ebi_source" }
+
+[dev-dependencies]
+pollster = "0.2.5"

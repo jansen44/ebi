@@ -2,8 +2,8 @@ use std::borrow::Borrow;
 use std::ffi::{c_char, CString};
 use std::path::PathBuf;
 
-pub use ebi_source::Source;
-pub use ebi_source::{serde_json, Deserialize};
+use ebi_source::prelude::{async_ffi::FfiFuture, serde_json};
+use ebi_source::Source;
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -39,7 +39,7 @@ impl SourceManager {
     }
 
     // TODO: error handling
-    pub fn load_source(&mut self, identifier: &str) -> Result<(), String> {
+    pub async fn load_source(&mut self, identifier: &str) -> Result<(), String> {
         let file_name = handle_source_file_extension(identifier);
 
         let mut path = self.dir_path.clone();
@@ -50,24 +50,28 @@ impl SourceManager {
 
             let source_lib = Library::new(path).unwrap();
             let source_fn = source_lib
-                .get::<extern "C" fn() -> *mut c_char>(b"abi_source")
+                .get::<extern "C" fn() -> FfiFuture<*mut c_char>>(b"abi_source")
                 .unwrap();
 
-            let source = source_fn();
+            let source = source_fn().await;
             let source = CString::from_raw(source);
             let source = source.to_string_lossy();
 
             let source = serde_json::from_str(source.borrow()).unwrap();
             self.loaded_sources.push(source);
 
-            // let manga_fn = source_lib
-            //     .get::<extern "C" fn() -> ABIMangaList>(b"manga_list")
-            //     .unwrap();
+            let manga_fn = source_lib
+                .get::<extern "C" fn() -> FfiFuture<*mut c_char>>(b"abi_manga_list")
+                .unwrap();
 
-            // let manga = manga_fn();
-            // let manga = manga.into_vec();
+            let manga = manga_fn().await;
+            let manga = CString::from_raw(manga);
+            let manga = manga.to_string_lossy();
 
-            // println!("{:?}", manga);
+            let manga_lst: Vec<ebi_source::Manga> = serde_json::from_str(manga.borrow()).unwrap();
+            for manga in manga_lst.iter() {
+                println!("{} -- {} -- {}", manga.identifier, manga.title, manga.cover);
+            }
 
             Ok(())
         }
@@ -77,12 +81,14 @@ impl SourceManager {
 #[cfg(test)]
 mod tests {
     use ebi_source::locale::Locale;
+    use pollster::FutureExt as _;
 
     #[test]
     fn load_opex_and_yabu_sources() {
         let mut source_manager = super::SourceManager::new("../target/debug");
-        assert_eq!(source_manager.load_source("opex"), Ok(()));
-        assert_eq!(source_manager.load_source("yabu"), Ok(()));
+
+        assert_eq!(source_manager.load_source("opex").block_on(), Ok(()));
+        assert_eq!(source_manager.load_source("yabu").block_on(), Ok(()));
 
         assert_eq!(source_manager.loaded_sources.len(), 2);
 
