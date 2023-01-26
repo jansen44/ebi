@@ -4,19 +4,9 @@ use syn::ItemFn;
 pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
     let ast = match syn::parse::<ItemFn>(input.clone()) {
         Ok(ast) => ast,
-        // on parse error, make IDEs happy; see fn docs
         Err(err) => return input_and_compile_error(input, err),
     };
-
     let name = ast.sig.ident.clone();
-
-    // TODO: Handle more functions
-    // if name.to_string() != String::from("source") {
-    //     return input_and_compile_error(
-    //         input,
-    //         syn::Error::new(Span::call_site(), r#"invalid function name"#),
-    //     );
-    // }
 
     // TODO: Validate funcion name => allow only pre-defined functions
     let func_name: proc_macro2::TokenStream = format!("abi_{}", name.to_string()).parse().unwrap();
