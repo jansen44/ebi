@@ -2,7 +2,7 @@ on: [push]
 
 jobs:
   test-linux:
-    name: Ebi Test
+    name: Ebi Test -- Linux
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
           command: test
           args: -- --nocapture
   test-windows:
-    name: Ebi Test
+    name: Ebi Test -- Windows
     runs-on: windows-latest
     steps:
       - name: Checkout
