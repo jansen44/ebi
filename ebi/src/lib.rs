@@ -117,11 +117,25 @@ mod tests {
         let _ = source_manager.load_source(opex_identifier);
 
         let opex_source = source_manager.get(opex_identifier).unwrap();
+
         let manga_list = opex_source.manga_list().block_on();
+        let hot_manga = opex_source.hot_manga().block_on();
+        let popular_manga = opex_source.popular_manga().block_on();
+        let latest_manga = opex_source.latest_manga().block_on();
 
         assert!(manga_list.is_ok());
+        assert!(hot_manga.is_ok());
+        assert!(popular_manga.is_ok());
+        assert!(latest_manga.is_ok());
 
         let manga_list = manga_list.unwrap();
+        let hot_manga = hot_manga.unwrap();
+        let popular_manga = popular_manga.unwrap();
+        let latest_manga = latest_manga.unwrap();
+
         assert_eq!(manga_list.len(), 3);
+        assert_eq!(hot_manga.len(), 3);
+        assert_eq!(popular_manga.len(), 3);
+        assert_eq!(latest_manga.len(), 3);
     }
 }

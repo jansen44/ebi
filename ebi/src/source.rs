@@ -51,6 +51,18 @@ impl std::convert::TryFrom<PathBuf> for Source {
     }
 }
 
+impl Source {
+    async fn get_abi_func_response(&self, name: &str) -> Result<String, String> {
+        let f = unsafe { self.lib.get::<AsyncJSONResourceFn>(name.as_bytes()) };
+        match f {
+            Ok(f) => Ok(async_json_fn_to_string(f).await),
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+}
+
 // TODO: Better error handling
 #[async_trait::async_trait]
 impl SourceLoader for Source {
@@ -61,29 +73,39 @@ impl SourceLoader for Source {
     }
 
     async fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
-        let manga_list_fn = unsafe { self.lib.get::<AsyncJSONResourceFn>(b"abi_manga_list") };
-        let manga_list = match manga_list_fn {
+        match self.get_abi_func_response("abi_manga_list").await {
             Ok(manga_list) => {
-                let manga_list = async_json_fn_to_string(manga_list).await;
-                serde_json::from_str(manga_list.borrow())
+                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
             }
-            Err(e) => {
-                return Err(e.to_string());
-            }
-        };
-        manga_list.map_err(|err| err.to_string())
+            Err(e) => Err(e),
+        }
     }
 
     async fn latest_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        todo!()
+        match self.get_abi_func_response("abi_latest_manga").await {
+            Ok(manga_list) => {
+                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     async fn popular_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        todo!()
+        match self.get_abi_func_response("abi_popular_manga").await {
+            Ok(manga_list) => {
+                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     async fn hot_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        todo!()
+        match self.get_abi_func_response("abi_hot_manga").await {
+            Ok(manga_list) => {
+                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
+            }
+            Err(e) => Err(e),
+        }
     }
 
     async fn search_manga(&self, _manga_title: &str) -> Result<Vec<Manga>, Self::Error> {
