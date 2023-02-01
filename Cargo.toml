@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "ebi",
-
-  "sources/pt_br/opex",
-  "sources/pt_br/yabu",
+  
+  "ebi_source",
+  "ebi_source_macros",
 ]
