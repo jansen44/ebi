@@ -1,51 +1,102 @@
 use proc_macro::TokenStream;
-use syn::ItemFn;
+use syn::{ItemFn, Signature};
+
+enum AbiFunctions {
+    Source,
+    MangaList,
+    ChapterList,
+}
+
+impl TryFrom<&proc_macro2::Ident> for AbiFunctions {
+    type Error = syn::Error;
+
+    fn try_from(name: &proc_macro2::Ident) -> Result<Self, Self::Error> {
+        match name.to_string().as_str() {
+            "source" => Ok(Self::Source),
+            "manga_list" => Ok(Self::MangaList),
+            "chapter_list" => Ok(Self::ChapterList),
+            _ => Err(syn::Error::new(name.span(), "Invalid function name")),
+        }
+    }
+}
+
+impl AbiFunctions {
+    pub fn arg_list(&self) -> proc_macro2::TokenStream {
+        match self {
+            AbiFunctions::MangaList | AbiFunctions::Source => String::new(),
+            AbiFunctions::ChapterList => String::from("manga: ABIManga"),
+        }
+        .parse()
+        .unwrap()
+    }
+
+    pub fn convert(&self) -> proc_macro2::TokenStream {
+        match self {
+            AbiFunctions::MangaList | AbiFunctions::Source => String::new(),
+            AbiFunctions::ChapterList => {
+                String::from("let manga: ebi_source::Manga = manga.into()")
+            }
+        }
+        .parse()
+        .unwrap()
+    }
+
+    pub fn call(&self, name: String) -> proc_macro2::TokenStream {
+        match self {
+            AbiFunctions::MangaList | AbiFunctions::Source => {
+                format!("let resource = {}()", name)
+            }
+            AbiFunctions::ChapterList => format!("let resource = {}(manga)", name),
+        }
+        .parse()
+        .unwrap()
+    }
+}
+
+pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error> {
+    let name = &signature.ident;
+
+    let abi_fn_name = format!("abi_{}", name.to_string());
+    let abi_fn_name: proc_macro2::TokenStream = abi_fn_name.parse().unwrap();
+
+    let function = AbiFunctions::try_from(name)?;
+    let arg_list = function.arg_list();
+    let convert = function.convert();
+    let call = function.call(name.to_string());
+
+    let abi_function = quote::quote! {
+        #[no_mangle]
+        pub extern "C" fn #abi_fn_name(#arg_list) -> *mut ffi::c_char {
+            use ffi::{c_char, CString};
+
+            #convert;
+            #call;
+            let resource = serde_json::to_string(&resource).unwrap();
+            let resource = CString::new(resource).unwrap();
+
+            resource.into_raw()
+        }
+    };
+
+    Ok(abi_function.into())
+}
 
 pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
     let ast = match syn::parse::<ItemFn>(input.clone()) {
         Ok(ast) => ast,
         Err(err) => return input_and_compile_error(input, err),
     };
-    let name = ast.sig.ident.clone();
 
-    // TODO: Validate funcion name => allow only pre-defined functions
-    let func_name: proc_macro2::TokenStream = format!("abi_{}", name.to_string()).parse().unwrap();
-
-    let gen = match ast.sig.asyncness {
-        Some(_) => quote::quote! {
-            #[no_mangle]
-            pub extern "C" fn #func_name() -> async_ffi::FfiFuture<*mut ffi::c_char> {
-                use async_ffi::FutureExt;
-                use ffi::{c_char, CString};
-
-                async move {
-                    let src = #name().await;
-                    let src = serde_json::to_string(&src).unwrap();
-                    let src = CString::new(src).unwrap();
-
-                    src.into_raw()
-                }
-                .into_ffi()
-            }
-        },
-        None => quote::quote! {
-            #[no_mangle]
-            pub extern "C" fn #func_name() -> *mut ffi::c_char {
-                use async_ffi::FutureExt;
-                use ffi::{c_char, CString};
-
-                let src = #name();
-                let src = serde_json::to_string(&src).unwrap();
-                let src = CString::new(src).unwrap();
-
-                src.into_raw()
-            }
-        },
+    let signature = ast.sig;
+    let abi_function = match gen_abi_function(&signature) {
+        Ok(abi_fn) => abi_fn,
+        Err(err) => return input_and_compile_error(input, err),
     };
 
-    let gen: TokenStream = gen.into();
+    // TODO: Validate funcion name => allow only pre-defined functions
+
     let mut input = input.clone();
-    input.extend(gen);
+    input.extend(abi_function);
     input
 }
 

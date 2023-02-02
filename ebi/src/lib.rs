@@ -69,73 +69,60 @@ mod tests {
     use ebi_source::locale::Locale;
     use ebi_source::SourceLoader;
 
-    use pollster::FutureExt;
-
     #[test]
-    fn load_opex_and_yabu_sources() {
-        let mut source_manager = super::SourceManager::new("../target/debug");
+    fn load_opex_sources() {
+        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
 
         let opex_identifier = "opex";
-        let yabu_identifier = "yabu";
 
         assert_eq!(source_manager.load_source(opex_identifier), Ok(()));
-        assert_eq!(source_manager.load_source(yabu_identifier), Ok(()));
 
-        assert_eq!(source_manager.sources.len(), 2);
+        assert_eq!(source_manager.sources.len(), 1);
 
         let opex_source = source_manager.get(opex_identifier).unwrap();
-        let yabu_source = source_manager.get(yabu_identifier).unwrap();
 
         let opex_source = opex_source.source().unwrap();
-        let yabu_source = yabu_source.source().unwrap();
 
         assert_eq!(opex_source.identifier, "opex");
         assert_eq!(opex_source.title, "One Piece Ex");
         assert_eq!(opex_source.description, "One Piece Ex | De fã para fã");
         assert_eq!(opex_source.locale, Locale::PtBr);
 
-        assert_eq!(yabu_source.identifier, "yabu");
-        assert_eq!(yabu_source.title, "Manga Yabu");
-        assert_eq!(yabu_source.description, "Manga Yabu! - Ler Mangás Online");
-        assert_eq!(yabu_source.locale, Locale::PtBr);
+        let sources = source_manager.available_sources();
 
-        let mut sources = source_manager.available_sources();
-        sources.sort();
-
-        assert_eq!(
-            sources,
-            vec![String::from(opex_identifier), String::from(yabu_identifier)]
-        );
+        assert_eq!(sources, vec![String::from(opex_identifier)]);
     }
 
     #[test]
     fn load_opex_manga_list() {
-        let mut source_manager = super::SourceManager::new("../target/debug");
+        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
 
         let opex_identifier = "opex";
-
         let _ = source_manager.load_source(opex_identifier);
-
         let opex_source = source_manager.get(opex_identifier).unwrap();
 
-        let manga_list = opex_source.manga_list().block_on();
-        let hot_manga = opex_source.hot_manga().block_on();
-        let popular_manga = opex_source.popular_manga().block_on();
-        let latest_manga = opex_source.latest_manga().block_on();
+        let manga_list = opex_source.manga_list();
 
         assert!(manga_list.is_ok());
-        assert!(hot_manga.is_ok());
-        assert!(popular_manga.is_ok());
-        assert!(latest_manga.is_ok());
 
         let manga_list = manga_list.unwrap();
-        let hot_manga = hot_manga.unwrap();
-        let popular_manga = popular_manga.unwrap();
-        let latest_manga = latest_manga.unwrap();
 
         assert_eq!(manga_list.len(), 3);
-        assert_eq!(hot_manga.len(), 3);
-        assert_eq!(popular_manga.len(), 3);
-        assert_eq!(latest_manga.len(), 3);
+    }
+
+    #[test]
+    fn load_opex_chapter_list() {
+        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
+
+        let opex_identifier = "opex";
+        let _ = source_manager.load_source(opex_identifier);
+        let opex_source = source_manager.get(opex_identifier).unwrap();
+
+        let manga_list = opex_source.manga_list().unwrap();
+        let manga = manga_list.get(1).unwrap();
+
+        let chapter_list = opex_source.chapter_list(manga.clone());
+        assert!(chapter_list.is_ok());
+        assert!(chapter_list.unwrap().len() > 0);
     }
 }

@@ -2,19 +2,13 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use ebi_source::prelude::{serde_json, AsyncJSONResourceFn, JSONResourceFn};
+use ebi_source::prelude::{serde_json, ABIManga, JSONResourceFn};
 use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use libloading::{Library, Symbol};
 
 fn json_fn_to_string(f: Symbol<JSONResourceFn>) -> String {
     let f = f();
-    let f = unsafe { CString::from_raw(f) };
-    f.to_string_lossy().to_string()
-}
-
-async fn async_json_fn_to_string(f: Symbol<'_, AsyncJSONResourceFn>) -> String {
-    let f = f().await;
     let f = unsafe { CString::from_raw(f) };
     f.to_string_lossy().to_string()
 }
@@ -52,10 +46,10 @@ impl std::convert::TryFrom<PathBuf> for Source {
 }
 
 impl Source {
-    async fn get_abi_func_response(&self, name: &str) -> Result<String, String> {
-        let f = unsafe { self.lib.get::<AsyncJSONResourceFn>(name.as_bytes()) };
+    fn get_abi_func_response(&self, name: &str) -> Result<String, String> {
+        let f = unsafe { self.lib.get::<JSONResourceFn>(name.as_bytes()) };
         match f {
-            Ok(f) => Ok(async_json_fn_to_string(f).await),
+            Ok(f) => Ok(json_fn_to_string(f)),
             Err(e) => {
                 return Err(e.to_string());
             }
@@ -64,7 +58,6 @@ impl Source {
 }
 
 // TODO: Better error handling
-#[async_trait::async_trait]
 impl SourceLoader for Source {
     type Error = String;
 
@@ -72,8 +65,8 @@ impl SourceLoader for Source {
         Ok(self.source.clone())
     }
 
-    async fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
-        match self.get_abi_func_response("abi_manga_list").await {
+    fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
+        match self.get_abi_func_response("abi_manga_list") {
             Ok(manga_list) => {
                 serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
             }
@@ -81,54 +74,17 @@ impl SourceLoader for Source {
         }
     }
 
-    async fn latest_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        match self.get_abi_func_response("abi_latest_manga").await {
-            Ok(manga_list) => {
-                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
-            }
-            Err(e) => Err(e),
-        }
-    }
+    fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
+        let f = unsafe {
+            self.lib
+                .get::<extern "C" fn(manga: ABIManga) -> *mut std::ffi::c_char>(b"abi_chapter_list")
+                .unwrap()
+        };
+        let manga: ABIManga = manga.into();
+        let f = f(manga);
+        let f = unsafe { CString::from_raw(f) };
+        let f = f.to_string_lossy().to_string();
 
-    async fn popular_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        match self.get_abi_func_response("abi_popular_manga").await {
-            Ok(manga_list) => {
-                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
-            }
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn hot_manga(&self) -> Result<Vec<Manga>, Self::Error> {
-        match self.get_abi_func_response("abi_hot_manga").await {
-            Ok(manga_list) => {
-                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
-            }
-            Err(e) => Err(e),
-        }
-    }
-
-    async fn search_manga(&self, _manga_title: &str) -> Result<Vec<Manga>, Self::Error> {
-        todo!()
-    }
-
-    async fn get_manga(&self, _manga_identifier: &str) -> Result<Manga, Self::Error> {
-        todo!()
-    }
-
-    async fn chapter_list(&self, _manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
-        todo!()
-    }
-
-    async fn chapter(
-        &self,
-        _manga: Manga,
-        _chapter: usize,
-    ) -> Result<Option<Chapter>, Self::Error> {
-        todo!()
-    }
-
-    async fn page_url_list(&self, _chapter: Chapter) -> Result<Vec<String>, Self::Error> {
-        todo!()
+        serde_json::from_str(f.as_str()).map_err(|err| err.to_string())
     }
 }
