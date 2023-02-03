@@ -41,15 +41,29 @@ impl AbiFunctions {
         .unwrap()
     }
 
-    pub fn call(&self, name: String) -> proc_macro2::TokenStream {
+    pub fn call(&self, name: &str) -> proc_macro2::TokenStream {
+        let name: proc_macro2::TokenStream = name.parse().unwrap();
         match self {
-            AbiFunctions::MangaList | AbiFunctions::Source => {
-                format!("let resource = {}()", name)
-            }
-            AbiFunctions::ChapterList => format!("let resource = {}(manga)", name),
+            AbiFunctions::ChapterList => quote::quote! { #name(manga) },
+            _ => quote::quote! { #name() },
         }
-        .parse()
-        .unwrap()
+    }
+
+    pub fn convert_json(&self) -> proc_macro2::TokenStream {
+        match self {
+            AbiFunctions::Source => quote::quote! { serde_json::to_string(&resource).unwrap() },
+            _ => quote::quote! {
+                match resource {
+                    Ok(resource) => serde_json::to_string(&resource).unwrap(),
+                    Err(err) => {
+                        let err = SourceErrorSerialized {
+                            error: err,
+                        };
+                        serde_json::to_string(&err).unwrap()
+                    },
+                }
+            },
+        }
     }
 }
 
@@ -62,7 +76,8 @@ pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error
     let function = AbiFunctions::try_from(name)?;
     let arg_list = function.arg_list();
     let convert = function.convert();
-    let call = function.call(name.to_string());
+    let convert_json = function.convert_json();
+    let call = function.call(name.to_string().as_str());
 
     let abi_function = quote::quote! {
         #[no_mangle]
@@ -70,8 +85,8 @@ pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error
             use ffi::{c_char, CString};
 
             #convert;
-            #call;
-            let resource = serde_json::to_string(&resource).unwrap();
+            let resource = #call;
+            let resource = #convert_json;
             let resource = CString::new(resource).unwrap();
 
             resource.into_raw()

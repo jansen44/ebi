@@ -7,6 +7,10 @@ pub enum SourceError {
     Unknown(String),
     #[error("COULD_NOT_FETCH_DATA")]
     Fetch,
+    #[error("COULD_NOT_SERIALIZE_DATA")]
+    Serialize,
+    #[error("INVALID_IDENTIFIER_PROVIDED")]
+    InvalidIdentifier,
 }
 
 #[derive(Deserialize, Serialize)]

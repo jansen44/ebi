@@ -125,4 +125,20 @@ mod tests {
         assert!(chapter_list.is_ok());
         assert!(chapter_list.unwrap().len() > 0);
     }
+
+    #[test]
+    fn fail_to_load_opex_chapter_list() {
+        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
+
+        let opex_identifier = "opex";
+        let _ = source_manager.load_source(opex_identifier);
+        let opex_source = source_manager.get(opex_identifier).unwrap();
+
+        let manga_list = opex_source.manga_list().unwrap();
+        let mut manga = manga_list.get(1).unwrap().clone();
+        manga.identifier = "WRONG_IDENTIFIER".to_string();
+
+        let chapter_list = opex_source.chapter_list(manga);
+        assert!(chapter_list.is_err());
+    }
 }

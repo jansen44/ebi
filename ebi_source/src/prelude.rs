@@ -7,3 +7,4 @@ pub use crate::abi::JSONResourceFn;
 
 pub use crate::abi::manga::*;
 pub use crate::abi::source::*;
+pub use crate::error::*;

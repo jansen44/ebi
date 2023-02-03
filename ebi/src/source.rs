@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use ebi_source::prelude::{serde_json, ABIManga, JSONResourceFn};
+use ebi_source::prelude::{serde_json, ABIManga, JSONResourceFn, SourceErrorSerialized};
 use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use libloading::{Library, Symbol};
@@ -85,6 +85,13 @@ impl SourceLoader for Source {
         let f = unsafe { CString::from_raw(f) };
         let f = f.to_string_lossy().to_string();
 
-        serde_json::from_str(f.as_str()).map_err(|err| err.to_string())
+        let chapters = serde_json::from_str(f.as_str());
+        match chapters {
+            Ok(chapters) => Ok(chapters),
+            Err(_) => {
+                let err: SourceErrorSerialized = serde_json::from_str(f.as_str()).unwrap();
+                Err(format!("{}", err.error))
+            }
+        }
     }
 }
