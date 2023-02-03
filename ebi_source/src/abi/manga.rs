@@ -38,15 +38,16 @@ impl std::convert::Into<Manga> for ABIManga {
             None
         } else {
             let description = unsafe { CString::from_raw(self.description) };
-            let description = description.to_string_lossy().into_owned();
-            Some(description)
+            Some(description.to_string_lossy().into_owned())
         };
 
         let genres = unsafe {
             let genres = slice::from_raw_parts(self.genre, self.genre_len)
-                .into_iter()
-                .map(|g| CString::from_raw(*g))
-                .map(|g| g.to_string_lossy().into_owned())
+                .iter()
+                .map(|g| {
+                    let cstr = CString::from_raw(*g);
+                    cstr.to_string_lossy().into_owned()
+                })
                 .collect();
             std::mem::drop(*self.genre);
             genres
@@ -101,36 +102,5 @@ impl std::convert::From<Manga> for ABIManga {
         std::mem::forget(genre);
 
         return manga;
-    }
-}
-
-#[repr(C)]
-pub struct ABIMangaList {
-    pub manga: *const ABIManga,
-    pub len: usize,
-}
-
-impl ABIMangaList {
-    pub fn from_vec(manga: Vec<Manga>) -> Self {
-        let manga_list: Vec<ABIManga> = manga.clone().into_iter().map(|m| m.into()).collect();
-
-        let manga = ABIMangaList {
-            len: manga_list.len(),
-            manga: manga_list.as_ptr(),
-        };
-        std::mem::forget(manga_list);
-        manga
-    }
-
-    pub fn into_vec(self) -> Vec<Manga> {
-        let manga = unsafe {
-            let manga = slice::from_raw_parts(self.manga, self.len)
-                .into_iter()
-                .map(|m| (*m).into())
-                .collect();
-            std::mem::drop(*self.manga);
-            manga
-        };
-        manga
     }
 }
