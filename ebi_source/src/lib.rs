@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod abi;
-
+pub mod error;
 pub mod locale;
 pub mod prelude;
 

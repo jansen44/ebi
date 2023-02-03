@@ -7,7 +7,7 @@ pub struct ABISource {
     pub identifier: *mut c_char,
     pub title: *mut c_char,
     pub description: *mut c_char,
-    pub locale: u32,
+    pub locale: u8,
 }
 
 impl std::convert::Into<Source> for ABISource {
@@ -40,7 +40,7 @@ impl std::convert::From<Source> for ABISource {
             identifier: identifier.into_raw(),
             title: title.into_raw(),
             description: description.into_raw(),
-            locale: value.locale as u32,
+            locale: value.locale as u8,
         }
     }
 }

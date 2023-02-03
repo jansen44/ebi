@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-#[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Locale {
-    Unknown = 0,
+    Unknown,
     EnUs,
     PtBr,
 }
 
-impl std::convert::From<u32> for Locale {
-    fn from(value: u32) -> Self {
+impl std::convert::From<u8> for Locale {
+    fn from(value: u8) -> Self {
         match value {
             1 => Self::EnUs,
             2 => Self::PtBr,
