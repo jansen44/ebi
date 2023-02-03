@@ -1,23 +1,15 @@
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize, Deserialize)]
 pub enum SourceError {
-    #[error("UNKNOWN_ERROR")]
-    Unknown,
+    #[error("UNKNOWN_ERROR::{0}")]
+    Unknown(String),
+    #[error("COULD_NOT_FETCH_DATA")]
+    Fetch,
 }
 
-impl From<u8> for SourceError {
-    fn from(value: u8) -> Self {
-        match value {
-            _ => Self::Unknown,
-        }
-    }
-}
-
-impl Into<u8> for SourceError {
-    fn into(self) -> u8 {
-        match self {
-            Self::Unknown => 0,
-        }
-    }
+#[derive(Deserialize, Serialize)]
+pub struct SourceErrorSerialized {
+    pub error: SourceError,
 }
