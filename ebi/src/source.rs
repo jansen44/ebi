@@ -2,15 +2,25 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
+use ebi_source::abi::JSONInputedResourceFn;
 use ebi_source::prelude::{serde_json, ABIManga, JSONResourceFn, SourceErrorSerialized};
 use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use libloading::{Library, Symbol};
 
+fn ptr_to_string(ptr: *mut i8) -> String {
+    let stri = unsafe { CString::from_raw(ptr) };
+    stri.to_string_lossy().to_string()
+}
+
 fn json_fn_to_string(f: Symbol<JSONResourceFn>) -> String {
     let f = f();
-    let f = unsafe { CString::from_raw(f) };
-    f.to_string_lossy().to_string()
+    ptr_to_string(f)
+}
+
+fn json_fn_to_string_inputed<T>(f: Symbol<JSONInputedResourceFn<T>>, input: T) -> String {
+    let f = f(input);
+    ptr_to_string(f)
 }
 
 pub struct Source {
@@ -50,9 +60,15 @@ impl Source {
         let f = unsafe { self.lib.get::<JSONResourceFn>(name.as_bytes()) };
         match f {
             Ok(f) => Ok(json_fn_to_string(f)),
-            Err(e) => {
-                return Err(e.to_string());
-            }
+            Err(e) => Err(e.to_string()),
+        }
+    }
+
+    fn get_abi_inputed_func_response<T>(&self, name: &str, input: T) -> Result<String, String> {
+        let f = unsafe { self.lib.get::<JSONInputedResourceFn<T>>(name.as_bytes()) };
+        match f {
+            Ok(f) => Ok(json_fn_to_string_inputed(f, input)),
+            Err(e) => Err(e.to_string()),
         }
     }
 }
@@ -75,21 +91,17 @@ impl SourceLoader for Source {
     }
 
     fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
-        let f = unsafe {
-            self.lib
-                .get::<extern "C" fn(manga: ABIManga) -> *mut std::ffi::c_char>(b"abi_chapter_list")
-                .unwrap()
-        };
         let manga: ABIManga = manga.into();
-        let f = f(manga);
-        let f = unsafe { CString::from_raw(f) };
-        let f = f.to_string_lossy().to_string();
 
-        let chapters = serde_json::from_str(f.as_str());
+        let chapter_list = self
+            .get_abi_inputed_func_response("abi_chapter_list", manga)
+            .map_err(|err| err.to_string())?;
+
+        let chapters = serde_json::from_str(&chapter_list);
         match chapters {
             Ok(chapters) => Ok(chapters),
             Err(_) => {
-                let err: SourceErrorSerialized = serde_json::from_str(f.as_str()).unwrap();
+                let err: SourceErrorSerialized = serde_json::from_str(&chapter_list).unwrap();
                 Err(format!("{}", err.error))
             }
         }
