@@ -80,7 +80,6 @@ pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error
     let call = function.call(name.to_string().as_str());
 
     let abi_function = quote::quote! {
-        #[cfg(dylib)]
         #[no_mangle]
         pub extern "C" fn #abi_fn_name(#arg_list) -> *mut ffi::c_char {
             use ffi::{c_char, CString};

@@ -6,7 +6,3 @@ edition = "2021"
 [dependencies]
 libloading = "0.7"
 ebi_source = { path = "../ebi_source" }
-
-[dev-dependencies]
-valid_source_macro_mock = { path = "../mocks/valid_source_macro_mock" }
-invalid_source_macro_mock = { path = "../mocks/invalid_source_macro_mock" }
