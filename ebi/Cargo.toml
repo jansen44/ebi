@@ -8,4 +8,4 @@ libloading = "0.7"
 ebi_source = { path = "../ebi_source" }
 
 [dev-dependencies]
-pollster = "0.2.5"
+valid_source_macro_mock = { path = "../mocks/valid_source_macro_mock" }

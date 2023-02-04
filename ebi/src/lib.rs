@@ -66,79 +66,82 @@ impl SourceManager {
 
 #[cfg(test)]
 mod tests {
-    use ebi_source::locale::Locale;
     use ebi_source::SourceLoader;
+    use valid_source_macro_mock::{chapter_list, manga_list, source};
+
+    const SOURCE_DIR: &str = "../target/debug";
 
     #[test]
-    fn load_opex_sources() {
-        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
+    fn load_valid_source() {
+        let mock_source = source();
 
-        let opex_identifier = "opex";
+        let mut source_manager = super::SourceManager::new(SOURCE_DIR);
+        source_manager.load_source(&mock_source.identifier).unwrap();
 
-        assert_eq!(source_manager.load_source(opex_identifier), Ok(()));
+        let dy_source = source_manager
+            .get(&mock_source.identifier)
+            .unwrap()
+            .source()
+            .unwrap();
+        assert_eq!(dy_source.identifier, mock_source.identifier);
+        assert_eq!(dy_source.title, mock_source.title);
+        assert_eq!(dy_source.description, mock_source.description);
+        assert_eq!(dy_source.locale, mock_source.locale);
 
-        assert_eq!(source_manager.sources.len(), 1);
-
-        let opex_source = source_manager.get(opex_identifier).unwrap();
-
-        let opex_source = opex_source.source().unwrap();
-
-        assert_eq!(opex_source.identifier, "opex");
-        assert_eq!(opex_source.title, "One Piece Ex");
-        assert_eq!(opex_source.description, "One Piece Ex | De fã para fã");
-        assert_eq!(opex_source.locale, Locale::PtBr);
-
-        let sources = source_manager.available_sources();
-
-        assert_eq!(sources, vec![String::from(opex_identifier)]);
+        assert_eq!(
+            source_manager.available_sources(),
+            vec![dy_source.identifier]
+        );
     }
 
     #[test]
-    fn load_opex_manga_list() {
-        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
+    fn load_valid_manga_list() {
+        let mock_source = source();
+        let mock_manga_list = manga_list().unwrap();
 
-        let opex_identifier = "opex";
-        let _ = source_manager.load_source(opex_identifier);
-        let opex_source = source_manager.get(opex_identifier).unwrap();
+        let mut source_manager = super::SourceManager::new(SOURCE_DIR);
+        source_manager.load_source(&mock_source.identifier).unwrap();
 
-        let manga_list = opex_source.manga_list();
+        let dy_manga_list = source_manager
+            .get(&mock_source.identifier)
+            .unwrap()
+            .manga_list()
+            .unwrap();
+        assert_eq!(mock_manga_list.len(), dy_manga_list.len());
 
-        assert!(manga_list.is_ok());
-
-        let manga_list = manga_list.unwrap();
-
-        assert_eq!(manga_list.len(), 3);
+        for (mock, dy) in mock_manga_list.iter().zip(dy_manga_list.iter()) {
+            assert_eq!(mock.identifier, dy.identifier);
+            assert_eq!(mock.title, dy.title);
+            assert_eq!(mock.url, dy.url);
+            assert_eq!(mock.cover, dy.cover);
+            assert_eq!(mock.genres, dy.genres);
+            assert_eq!(mock.description, dy.description);
+            assert_eq!(mock.source_identifier, dy.source_identifier);
+        }
     }
 
     #[test]
-    fn load_opex_chapter_list() {
-        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
+    fn load_valid_chapter_list() {
+        let mock_source = source();
+        let mock_manga_list = manga_list().unwrap();
 
-        let opex_identifier = "opex";
-        let _ = source_manager.load_source(opex_identifier);
-        let opex_source = source_manager.get(opex_identifier).unwrap();
+        let mut source_manager = super::SourceManager::new(SOURCE_DIR);
+        source_manager.load_source(&mock_source.identifier).unwrap();
 
-        let manga_list = opex_source.manga_list().unwrap();
-        let manga = manga_list.get(1).unwrap();
+        let dy_source = source_manager.get(&mock_source.identifier).unwrap();
 
-        let chapter_list = opex_source.chapter_list(manga.clone());
-        assert!(chapter_list.is_ok());
-        assert!(chapter_list.unwrap().len() > 0);
-    }
+        for manga in mock_manga_list.iter() {
+            let mock_chapter_list = chapter_list(manga.clone()).unwrap();
+            let dy_chapter_list = dy_source.chapter_list(manga.clone()).unwrap();
+            assert_eq!(mock_chapter_list.len(), dy_chapter_list.len());
 
-    #[test]
-    fn fail_to_load_opex_chapter_list() {
-        let mut source_manager = super::SourceManager::new("../../ebi-sources/target/debug");
-
-        let opex_identifier = "opex";
-        let _ = source_manager.load_source(opex_identifier);
-        let opex_source = source_manager.get(opex_identifier).unwrap();
-
-        let manga_list = opex_source.manga_list().unwrap();
-        let mut manga = manga_list.get(1).unwrap().clone();
-        manga.identifier = "WRONG_IDENTIFIER".to_string();
-
-        let chapter_list = opex_source.chapter_list(manga);
-        assert!(chapter_list.is_err());
+            for (mock, dy) in mock_chapter_list.iter().zip(dy_chapter_list.iter()) {
+                assert_eq!(mock.chapter, dy.chapter);
+                assert_eq!(mock.title, dy.title);
+                assert_eq!(mock.url, dy.url);
+                assert_eq!(mock.manga_identifier, dy.manga_identifier);
+                assert_eq!(mock.source_identifier, dy.source_identifier);
+            }
+        }
     }
 }

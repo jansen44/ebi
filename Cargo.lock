@@ -14,7 +14,7 @@ version = "0.1.0"
 dependencies = [
  "ebi_source",
  "libloading",
- "pollster",
+ "valid_source_macro_mock",
 ]
 
 [[package]]
@@ -51,12 +51,6 @@ dependencies = [
  "cfg-if",
  "winapi",
 ]
-
-[[package]]
-name = "pollster"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5da3b0203fd7ee5720aa0b5e790b591aa5d3f41c3ed2c34a3a393382198af2f7"
 
 [[package]]
 name = "proc-macro2"
@@ -149,6 +143,14 @@ name = "unicode-ident"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "84a22b9f218b40614adcb3f4ff08b703773ad44fa9423e4e0d346d5db86e4ebc"
+
+[[package]]
+name = "valid_source_macro_mock"
+version = "0.1.0"
+dependencies = [
+ "ebi_source",
+ "ebi_source_macros",
+]
 
 [[package]]
 name = "winapi"
