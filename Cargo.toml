@@ -6,4 +6,5 @@ members = [
   "ebi_source_macros",
   
   "mocks/valid_source_macro_mock",
+  "mocks/invalid_source_macro_mock",
 ]

@@ -49,7 +49,6 @@ impl std::convert::Into<Manga> for ABIManga {
                     cstr.to_string_lossy().into_owned()
                 })
                 .collect();
-            std::mem::drop(*self.genre);
             genres
         };
 

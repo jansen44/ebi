@@ -37,7 +37,7 @@ pub fn chapter_list(manga: Manga) -> Result<Vec<Chapter>, SourceError> {
     Ok(get_chapters(&manga, 100))
 }
 
-pub fn get_chapters(manga: &Manga, size: u16) -> Vec<Chapter> {
+fn get_chapters(manga: &Manga, size: u16) -> Vec<Chapter> {
     (1..size + 1)
         .map(|chapter| Chapter {
             chapter,

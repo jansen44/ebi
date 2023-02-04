@@ -1,0 +1,11 @@
+[package]
+name = "invalid_source_macro_mock"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type=["dylib", "lib"]
+
+[dependencies]
+ebi_source  = { path = "../../ebi_source" }
+ebi_source_macros  = { path = "../../ebi_source_macros" }

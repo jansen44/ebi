@@ -82,11 +82,18 @@ impl SourceLoader for Source {
     }
 
     fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
-        match self.get_abi_func_response("abi_manga_list") {
-            Ok(manga_list) => {
-                serde_json::from_str(manga_list.as_str()).map_err(|err| err.to_string())
+        let manga_list = self
+            .get_abi_func_response("abi_manga_list")
+            .map_err(|err| err.to_string())?;
+
+        let manga = serde_json::from_str(&manga_list);
+        match manga {
+            Ok(manga) => Ok(manga),
+            Err(_) => {
+                let err: SourceErrorSerialized =
+                    serde_json::from_str(&manga_list).map_err(|err| err.to_string())?;
+                Err(format!("{}", err.error))
             }
-            Err(e) => Err(e),
         }
     }
 
@@ -101,7 +108,8 @@ impl SourceLoader for Source {
         match chapters {
             Ok(chapters) => Ok(chapters),
             Err(_) => {
-                let err: SourceErrorSerialized = serde_json::from_str(&chapter_list).unwrap();
+                let err: SourceErrorSerialized =
+                    serde_json::from_str(&chapter_list).map_err(|err| err.to_string())?;
                 Err(format!("{}", err.error))
             }
         }

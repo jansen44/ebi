@@ -13,6 +13,7 @@ name = "ebi"
 version = "0.1.0"
 dependencies = [
  "ebi_source",
+ "invalid_source_macro_mock",
  "libloading",
  "valid_source_macro_mock",
 ]
@@ -34,6 +35,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "invalid_source_macro_mock"
+version = "0.1.0"
+dependencies = [
+ "ebi_source",
+ "ebi_source_macros",
 ]
 
 [[package]]
