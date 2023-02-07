@@ -1,3 +1,5 @@
+use std::ffi::NulError;
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -11,9 +13,18 @@ pub enum SourceError {
     Serialize,
     #[error("INVALID_IDENTIFIER_PROVIDED")]
     InvalidIdentifier,
+
+    #[error("ABI_NULL_CONVERSION_ERROR")]
+    ABINullConversion,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct SourceErrorSerialized {
     pub error: SourceError,
+}
+
+impl std::convert::From<NulError> for SourceError {
+    fn from(_: NulError) -> Self {
+        Self::ABINullConversion
+    }
 }

@@ -33,17 +33,22 @@ pub fn manga_list() -> Result<Vec<Manga>, SourceError> {
 }
 
 #[ebi_plugin]
-pub fn chapter_list(manga: Manga) -> Result<Vec<Chapter>, SourceError> {
-    Ok(get_chapters(&manga, 100))
+pub fn chapter_list(
+    manga_identifier: String,
+    manga_url: String,
+) -> Result<Vec<Chapter>, SourceError> {
+    Ok(get_chapters(&manga_identifier, &manga_url, 100))
 }
 
-fn get_chapters(manga: &Manga, size: u16) -> Vec<Chapter> {
+fn get_chapters(identifier: &str, url: &str, size: u16) -> Vec<Chapter> {
+    let manga = manga_list().unwrap();
+    let manga = manga.iter().find(|m| m.identifier == identifier).unwrap();
     (1..size + 1)
         .map(|chapter| Chapter {
             chapter,
-            title: format!("{} -- {}", manga.title.clone(), chapter),
-            url: format!("{}/{}", manga.url.clone(), chapter),
-            manga_identifier: manga.identifier.clone(),
+            title: format!("{} -- {}", &manga.title, chapter),
+            url: format!("{}/{}", url, chapter),
+            manga_identifier: identifier.to_string(),
             source_identifier: SOURCE_IDENTIFIER.to_string(),
         })
         .collect()

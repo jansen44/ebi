@@ -2,8 +2,8 @@ use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use ebi_source::abi::JSONInputedResourceFn;
-use ebi_source::prelude::{serde_json, ABIManga, JSONResourceFn, SourceErrorSerialized};
+use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
+use ebi_source::prelude::{serde_json, SourceErrorSerialized};
 use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use libloading::{Library, Symbol};
@@ -98,7 +98,7 @@ impl SourceLoader for Source {
     }
 
     fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
-        let manga: ABIManga = manga.into();
+        let manga = ABIChapterListInput::try_from(manga).unwrap();
 
         let chapter_list = self
             .get_abi_inputed_func_response("abi_chapter_list", manga)

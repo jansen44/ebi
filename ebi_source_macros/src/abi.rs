@@ -24,7 +24,7 @@ impl AbiFunctions {
     pub fn arg_list(&self) -> proc_macro2::TokenStream {
         match self {
             AbiFunctions::MangaList | AbiFunctions::Source => String::new(),
-            AbiFunctions::ChapterList => String::from("manga: ABIManga"),
+            AbiFunctions::ChapterList => String::from("manga: ABIChapterListInput,"),
         }
         .parse()
         .unwrap()
@@ -32,19 +32,23 @@ impl AbiFunctions {
 
     pub fn convert(&self) -> proc_macro2::TokenStream {
         match self {
-            AbiFunctions::MangaList | AbiFunctions::Source => String::new(),
+            AbiFunctions::MangaList | AbiFunctions::Source => quote::quote! {},
             AbiFunctions::ChapterList => {
-                String::from("let manga: ebi_source::Manga = manga.into()")
+                quote::quote! {
+                    let manga_identifier = unsafe { CString::from_raw(manga.manga_identifier) };
+                    let manga_url = unsafe { CString::from_raw(manga.manga_url) };
+
+                    let manga_identifier = manga_identifier.to_string_lossy().into_owned();
+                    let manga_url = manga_url.to_string_lossy().into_owned();
+                }
             }
         }
-        .parse()
-        .unwrap()
     }
 
     pub fn call(&self, name: &str) -> proc_macro2::TokenStream {
         let name: proc_macro2::TokenStream = name.parse().unwrap();
         match self {
-            AbiFunctions::ChapterList => quote::quote! { #name(manga) },
+            AbiFunctions::ChapterList => quote::quote! { #name(manga_identifier, manga_url) },
             _ => quote::quote! { #name() },
         }
     }

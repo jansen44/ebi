@@ -153,7 +153,7 @@ mod broken_tests {
 
         Err(SourceError::Unknown(format!(
             "It was not possible to load chapters for \"{}\"",
-            manga.title
+            manga.identifier
         )))
     }
 

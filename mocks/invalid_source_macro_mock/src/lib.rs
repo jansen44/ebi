@@ -24,15 +24,18 @@ pub fn manga_list() -> Result<Vec<Manga>, SourceError> {
 }
 
 #[ebi_plugin]
-pub fn chapter_list(manga: Manga) -> Result<Vec<Chapter>, SourceError> {
-    if &manga.identifier == valid_manga().identifier.as_str() {
-        return Ok(get_chapters(&manga, 100));
+pub fn chapter_list(
+    manga_identifier: String,
+    manga_url: String,
+) -> Result<Vec<Chapter>, SourceError> {
+    if &manga_identifier != valid_manga().identifier.as_str() {
+        return Err(SourceError::Unknown(format!(
+            "It was not possible to load chapters for \"{}\"",
+            manga_identifier
+        )));
     }
 
-    Err(SourceError::Unknown(format!(
-        "It was not possible to load chapters for \"{}\"",
-        manga.title
-    )))
+    Ok(get_chapters(&manga_identifier, &manga_url, 100))
 }
 
 pub fn valid_manga() -> Manga {
@@ -59,13 +62,18 @@ pub fn invalid_manga() -> Manga {
     }
 }
 
-fn get_chapters(manga: &Manga, size: u16) -> Vec<Chapter> {
+fn get_chapters(manga_identifier: &str, manga_url: &str, size: u16) -> Vec<Chapter> {
+    let manga = match manga_identifier {
+        "valid" => valid_manga(),
+        _ => invalid_manga(),
+    };
+
     (1..size + 1)
         .map(|chapter| Chapter {
             chapter,
-            title: format!("{} -- {}", manga.title.clone(), chapter),
-            url: format!("{}/{}", manga.url.clone(), chapter),
-            manga_identifier: manga.identifier.clone(),
+            title: format!("{} -- {}", manga.title, chapter),
+            url: format!("{}/{}", manga_url, chapter),
+            manga_identifier: manga_identifier.to_string(),
             source_identifier: SOURCE_IDENTIFIER.to_string(),
         })
         .collect()
