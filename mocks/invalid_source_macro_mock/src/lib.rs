@@ -9,13 +9,13 @@ const SOURCE_DESCRIPTION: &str =
     "This is just a mocked source only intended to be used for tests! No real content here";
 
 #[ebi_plugin]
-pub fn source() -> Source {
-    Source {
+pub fn source() -> Result<Source, SourceError> {
+    Ok(Source {
         identifier: SOURCE_IDENTIFIER.to_owned(),
         title: SOURCE_TITLE.to_owned(),
         description: SOURCE_DESCRIPTION.to_owned(),
         locale: locale::Locale::EnUs,
-    }
+    })
 }
 
 #[ebi_plugin]

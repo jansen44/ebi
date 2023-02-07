@@ -1,5 +1,70 @@
 use proc_macro::TokenStream;
+use quote::ToTokens;
 use syn::{ItemFn, Signature};
+
+trait GenArgsExt {
+    fn args_list(&self) -> proc_macro2::TokenStream;
+    fn args_parsing(&self) -> proc_macro2::TokenStream;
+    fn call(&self, name: &proc_macro2::TokenStream) -> proc_macro2::TokenStream;
+}
+
+struct NonArgFunctions;
+struct ChapterListFunction;
+
+impl GenArgsExt for NonArgFunctions {
+    fn args_list(&self) -> proc_macro2::TokenStream {
+        quote::quote! {}
+    }
+
+    fn args_parsing(&self) -> proc_macro2::TokenStream {
+        quote::quote! {}
+    }
+
+    fn call(&self, name: &proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+        quote::quote! { #name() }
+    }
+}
+
+impl GenArgsExt for ChapterListFunction {
+    fn args_list(&self) -> proc_macro2::TokenStream {
+        quote::quote! { manga: ABIChapterListInput }
+    }
+
+    fn args_parsing(&self) -> proc_macro2::TokenStream {
+        quote::quote! {
+            let (manga_identifier, manga_url) = unsafe {
+                (CString::from_raw(manga.manga_identifier), CString::from_raw(manga.manga_url))
+            };
+
+            let manga_identifier = manga_identifier.to_string_lossy().into_owned();
+            let manga_url = manga_url.to_string_lossy().into_owned();
+        }
+    }
+
+    fn call(&self, name: &proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+        quote::quote! { #name(manga_identifier, manga_url) }
+    }
+}
+
+struct FuncGenerator {
+    name: proc_macro2::TokenStream,
+    gen: Box<dyn GenArgsExt>,
+}
+
+impl FuncGenerator {
+    pub fn args_list(&self) -> proc_macro2::TokenStream {
+        self.gen.args_list()
+    }
+
+    pub fn args_parsing(&self) -> proc_macro2::TokenStream {
+        self.gen.args_parsing()
+    }
+
+    pub fn call(&self) -> proc_macro2::TokenStream {
+        let name = &self.name;
+        self.gen.call(name)
+    }
+}
 
 enum AbiFunctions {
     Source,
@@ -21,67 +86,30 @@ impl TryFrom<&proc_macro2::Ident> for AbiFunctions {
 }
 
 impl AbiFunctions {
-    pub fn arg_list(&self) -> proc_macro2::TokenStream {
+    fn generator(self, name: proc_macro2::TokenStream) -> FuncGenerator {
         match self {
-            AbiFunctions::MangaList | AbiFunctions::Source => String::new(),
-            AbiFunctions::ChapterList => String::from("manga: ABIChapterListInput,"),
-        }
-        .parse()
-        .unwrap()
-    }
-
-    pub fn convert(&self) -> proc_macro2::TokenStream {
-        match self {
-            AbiFunctions::MangaList | AbiFunctions::Source => quote::quote! {},
-            AbiFunctions::ChapterList => {
-                quote::quote! {
-                    let manga_identifier = unsafe { CString::from_raw(manga.manga_identifier) };
-                    let manga_url = unsafe { CString::from_raw(manga.manga_url) };
-
-                    let manga_identifier = manga_identifier.to_string_lossy().into_owned();
-                    let manga_url = manga_url.to_string_lossy().into_owned();
-                }
-            }
-        }
-    }
-
-    pub fn call(&self, name: &str) -> proc_macro2::TokenStream {
-        let name: proc_macro2::TokenStream = name.parse().unwrap();
-        match self {
-            AbiFunctions::ChapterList => quote::quote! { #name(manga_identifier, manga_url) },
-            _ => quote::quote! { #name() },
-        }
-    }
-
-    pub fn convert_json(&self) -> proc_macro2::TokenStream {
-        match self {
-            AbiFunctions::Source => quote::quote! { serde_json::to_string(&resource).unwrap() },
-            _ => quote::quote! {
-                match resource {
-                    Ok(resource) => serde_json::to_string(&resource).unwrap(),
-                    Err(err) => {
-                        let err = SourceErrorSerialized {
-                            error: err,
-                        };
-                        serde_json::to_string(&err).unwrap()
-                    },
-                }
+            Self::ChapterList => FuncGenerator {
+                name,
+                gen: Box::new(ChapterListFunction {}),
+            },
+            _ => FuncGenerator {
+                name,
+                gen: Box::new(NonArgFunctions {}),
             },
         }
     }
 }
 
-pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error> {
+fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error> {
     let name = &signature.ident;
 
     let abi_fn_name = format!("abi_{}", name.to_string());
     let abi_fn_name: proc_macro2::TokenStream = abi_fn_name.parse().unwrap();
 
-    let function = AbiFunctions::try_from(name)?;
-    let arg_list = function.arg_list();
-    let convert = function.convert();
-    let convert_json = function.convert_json();
-    let call = function.call(name.to_string().as_str());
+    let function = AbiFunctions::try_from(name)?.generator(name.to_token_stream());
+    let arg_list = function.args_list();
+    let convert = function.args_parsing();
+    let call = function.call();
 
     let abi_function = quote::quote! {
         #[no_mangle]
@@ -90,7 +118,15 @@ pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error
 
             #convert;
             let resource = #call;
-            let resource = #convert_json;
+            let resource = match resource {
+                Ok(resource) => serde_json::to_string(&resource).unwrap(),
+                Err(err) => {
+                    let err = SourceErrorSerialized {
+                        error: err,
+                    };
+                    serde_json::to_string(&err).unwrap()
+                },
+            };
             let resource = CString::new(resource).unwrap();
 
             resource.into_raw()
@@ -100,21 +136,21 @@ pub fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error
     Ok(abi_function.into())
 }
 
-pub fn gen_ebi_plugin(_: TokenStream, input: TokenStream) -> TokenStream {
-    let ast = match syn::parse::<ItemFn>(input.clone()) {
+pub fn gen_ebi_plugin(_: TokenStream, fn_body: TokenStream) -> TokenStream {
+    let ast = match syn::parse::<ItemFn>(fn_body.clone()) {
         Ok(ast) => ast,
-        Err(err) => return input_and_compile_error(input, err),
+        Err(err) => return input_and_compile_error(fn_body, err),
     };
 
     let signature = ast.sig;
     let abi_function = match gen_abi_function(&signature) {
         Ok(abi_fn) => abi_fn,
-        Err(err) => return input_and_compile_error(input, err),
+        Err(err) => return input_and_compile_error(fn_body, err),
     };
 
     // TODO: Validate funcion name => allow only pre-defined functions
 
-    let mut input = input.clone();
+    let mut input = fn_body.clone();
     input.extend(abi_function);
     input
 }
