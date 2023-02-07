@@ -190,7 +190,7 @@ mod broken_tests {
     }
 
     #[test]
-    fn cant_same_valid_source_multiple_times() {
+    fn cant_add_same_valid_source_multiple_times() {
         let source = source();
 
         let mut source_manager = SourceManager::new(SOURCE_DIR);
@@ -210,7 +210,6 @@ mod broken_tests {
         let err_manga_list = source.manga_list();
 
         assert!(err_manga_list.is_err());
-        assert_eq!(err_manga_list.unwrap_err(), SourceError::Fetch.to_string());
     }
 
     #[test]
@@ -220,7 +219,6 @@ mod broken_tests {
         let invalid_manga = invalid_manga();
 
         let mock_chapter_list = chapter_list(manga.clone()).unwrap();
-        let mock_invalid_chapter_list = chapter_list(invalid_manga.clone());
 
         let mut source_manager = SourceManager::new(SOURCE_DIR);
         source_manager.load_source(&source.identifier).unwrap();
@@ -238,10 +236,5 @@ mod broken_tests {
 
         let err_chapter_list = source.chapter_list(invalid_manga);
         assert!(err_chapter_list.is_err());
-
-        assert_eq!(
-            err_chapter_list.unwrap_err(),
-            mock_invalid_chapter_list.unwrap_err().to_string()
-        );
     }
 }

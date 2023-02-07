@@ -18,7 +18,7 @@ pub enum SourceError {
     ABINullConversion,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct SourceErrorSerialized {
     pub error: SourceError,
 }

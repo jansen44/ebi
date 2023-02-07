@@ -1,6 +1,9 @@
+pub mod error;
+
 mod source;
 
 use ebi_source::SourceLoader;
+use error::EbiError;
 use std::{collections::HashMap, path::PathBuf};
 
 use source::Source;
@@ -38,9 +41,9 @@ impl SourceManager {
         }
     }
 
-    pub fn load_source(&mut self, identifier: &str) -> Result<(), String> {
-        if let Some(_) = self.get(identifier) {
-            return Err(String::from("Duplicated Source"));
+    pub fn load_source(&mut self, identifier: &str) -> Result<(), EbiError> {
+        if self.sources.contains_key(identifier) {
+            return Err(EbiError::DuplicatedSource);
         }
 
         let file_name = handle_source_file_extension(identifier);
