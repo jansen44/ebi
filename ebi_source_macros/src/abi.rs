@@ -56,7 +56,7 @@ impl GenArgsExt for ChapterPageListFunction {
     fn args_parsing(&self) -> proc_macro2::TokenStream {
         quote::quote! {
             let (chapter_url, manga_identifier) = unsafe {
-                (CString::from_raw(manga.chapter_url), CString::from_raw(manga.manga_identifier))
+                (CString::from_raw(chapter.chapter_url), CString::from_raw(chapter.manga_identifier))
             };
 
             let chapter_url = chapter_url.to_string_lossy().into_owned();
