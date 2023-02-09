@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::Ident;
 use quote::ToTokens;
 use syn::{ItemFn, Signature};
 
@@ -10,6 +11,7 @@ trait GenArgsExt {
 
 struct NonArgFunctions;
 struct ChapterListFunction;
+struct ChapterPageListFunction;
 
 impl GenArgsExt for NonArgFunctions {
     fn args_list(&self) -> proc_macro2::TokenStream {
@@ -46,6 +48,27 @@ impl GenArgsExt for ChapterListFunction {
     }
 }
 
+impl GenArgsExt for ChapterPageListFunction {
+    fn args_list(&self) -> proc_macro2::TokenStream {
+        quote::quote! { chapter: ABIChapterPageListInput }
+    }
+
+    fn args_parsing(&self) -> proc_macro2::TokenStream {
+        quote::quote! {
+            let (chapter_url, manga_identifier) = unsafe {
+                (CString::from_raw(manga.chapter_url), CString::from_raw(manga.manga_identifier))
+            };
+
+            let chapter_url = chapter_url.to_string_lossy().into_owned();
+            let manga_identifier = manga_identifier.to_string_lossy().into_owned();
+        }
+    }
+
+    fn call(&self, name: &proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+        quote::quote! { #name(chapter.chapter, chapter_url, manga_identifier) }
+    }
+}
+
 struct FuncGenerator {
     name: proc_macro2::TokenStream,
     gen: Box<dyn GenArgsExt>,
@@ -70,6 +93,7 @@ enum AbiFunctions {
     Source,
     MangaList,
     ChapterList,
+    ChapterPageList,
 }
 
 impl TryFrom<&proc_macro2::Ident> for AbiFunctions {
@@ -80,23 +104,27 @@ impl TryFrom<&proc_macro2::Ident> for AbiFunctions {
             "source" => Ok(Self::Source),
             "manga_list" => Ok(Self::MangaList),
             "chapter_list" => Ok(Self::ChapterList),
+            "chapter_page_list" => Ok(Self::ChapterPageList),
             _ => Err(syn::Error::new(name.span(), "Invalid function name")),
         }
     }
 }
 
 impl AbiFunctions {
-    fn generator(self, name: proc_macro2::TokenStream) -> FuncGenerator {
-        match self {
-            Self::ChapterList => FuncGenerator {
-                name,
-                gen: Box::new(ChapterListFunction {}),
-            },
-            _ => FuncGenerator {
-                name,
-                gen: Box::new(NonArgFunctions {}),
-            },
-        }
+    fn generator(name: &Ident) -> Result<FuncGenerator, syn::Error> {
+        let abi_func = Self::try_from(name)?;
+        let name = name.to_token_stream();
+
+        let generator: Box<dyn GenArgsExt> = match abi_func {
+            Self::ChapterList => Box::new(ChapterListFunction {}),
+            Self::ChapterPageList => Box::new(ChapterPageListFunction {}),
+            _ => Box::new(NonArgFunctions {}),
+        };
+
+        Ok(FuncGenerator {
+            name,
+            gen: generator,
+        })
     }
 }
 
@@ -106,7 +134,7 @@ fn gen_abi_function(signature: &Signature) -> Result<TokenStream, syn::Error> {
     let abi_fn_name = format!("abi_{}", name.to_string());
     let abi_fn_name: proc_macro2::TokenStream = abi_fn_name.parse().unwrap();
 
-    let function = AbiFunctions::try_from(name)?.generator(name.to_token_stream());
+    let function = AbiFunctions::generator(name)?;
     let arg_list = function.args_list();
     let convert = function.args_parsing();
     let call = function.call();
