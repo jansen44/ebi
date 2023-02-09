@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use ebi_source::prelude::SourceErrorSerialized;
+use ebi_source::prelude::{SourceError, SourceErrorSerialized};
 
 #[derive(Error, Debug)]
 pub enum EbiError {
@@ -21,4 +21,19 @@ pub enum EbiError {
 
     #[error("COULD_NOT_SERIALIZE_LIB_RESPONSE")]
     SerializeResponse,
+
+    #[error("COULD_NOT_GENERATE_ABI_REPRESENTATION")]
+    AbiSerialization,
+}
+
+impl std::convert::From<SourceError> for EbiError {
+    fn from(value: SourceError) -> Self {
+        match value {
+            SourceError::Unknown(msg) => Self::Unknown(msg),
+            SourceError::Fetch => todo!(),
+            SourceError::Serialize => todo!(),
+            SourceError::InvalidIdentifier => todo!(),
+            SourceError::ABINullConversion => Self::AbiSerialization,
+        }
+    }
 }

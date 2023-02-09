@@ -1,12 +1,11 @@
-use std::borrow::Borrow;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
-use ebi_source::prelude::{serde_json, SourceErrorSerialized};
-use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
+use libloading::Library;
 
-use libloading::{Library, Symbol};
+use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
+use ebi_source::prelude::{serde_json, Deserialize, SourceErrorSerialized};
+use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use crate::error::EbiError;
 
@@ -15,14 +14,27 @@ fn ptr_to_string(ptr: *mut i8) -> String {
     string.to_string_lossy().to_string()
 }
 
-fn json_fn_to_string(f: Symbol<JSONResourceFn>) -> String {
-    let f = f();
-    ptr_to_string(f)
+macro_rules! json_fn_to_string {
+    ($f:expr) => {{
+        let response = $f();
+        ptr_to_string(response)
+    }};
+    ($f:expr, $input:expr) => {{
+        let response = $f($input);
+        ptr_to_string(response)
+    }};
 }
 
-fn json_fn_to_string_inputed<T>(f: Symbol<JSONInputedResourceFn<T>>, input: T) -> String {
-    let f = f(input);
-    ptr_to_string(f)
+fn json_serialize<'a, T: Deserialize<'a>>(response: &'a str) -> Result<T, EbiError> {
+    let serialized = serde_json::from_str(&response);
+    match serialized {
+        Ok(serialized) => Ok(serialized),
+        Err(_) => {
+            let err: SourceErrorSerialized =
+                serde_json::from_str(&response).map_err(|_| EbiError::SerializeResponse)?;
+            Err(EbiError::LoadChapterList(err))
+        }
+    }
 }
 
 pub struct Source {
@@ -30,25 +42,42 @@ pub struct Source {
     source: EbiSource,
 }
 
+impl Source {
+    fn get_abi_func_response(&self, name: &str) -> Result<String, EbiError> {
+        let f = unsafe { self.lib.get::<JSONResourceFn>(name.as_bytes()) };
+        match f {
+            Ok(f) => Ok(json_fn_to_string!(f)),
+            Err(_) => Err(EbiError::LoadFunction),
+        }
+    }
+
+    fn get_abi_func_with_input_response<T>(
+        &self,
+        name: &str,
+        input: T,
+    ) -> Result<String, EbiError> {
+        let f = unsafe { self.lib.get::<JSONInputedResourceFn<T>>(name.as_bytes()) };
+        match f {
+            Ok(f) => Ok(json_fn_to_string!(f, input)),
+            Err(_) => Err(EbiError::LoadFunction),
+        }
+    }
+}
+
 // TODO: Add logs
 impl std::convert::TryFrom<PathBuf> for Source {
     type Error = EbiError;
 
     fn try_from(source_path: PathBuf) -> Result<Self, Self::Error> {
-        let lib = unsafe { Library::new(source_path) };
-        let lib = match lib {
-            Ok(lib) => lib,
-            Err(_) => return Err(EbiError::LoadLib),
+        let lib = unsafe { Library::new(source_path).map_err(|_| EbiError::LoadLib)? };
+
+        let source_fn = unsafe {
+            lib.get::<JSONResourceFn>(b"abi_source")
+                .map_err(|_| EbiError::LoadFunction)?
         };
 
-        let source_fn = unsafe { lib.get::<JSONResourceFn>(b"abi_source") };
-        let source = match source_fn {
-            Ok(source_fn) => {
-                let source = json_fn_to_string(source_fn);
-                serde_json::from_str(source.borrow())
-            }
-            Err(_) => return Err(EbiError::LoadFunction),
-        };
+        let source = json_fn_to_string!(source_fn);
+        let source = serde_json::from_str(&source);
 
         match source {
             Ok(source) => Ok(Source { lib, source }),
@@ -57,25 +86,6 @@ impl std::convert::TryFrom<PathBuf> for Source {
     }
 }
 
-impl Source {
-    fn get_abi_func_response(&self, name: &str) -> Result<String, EbiError> {
-        let f = unsafe { self.lib.get::<JSONResourceFn>(name.as_bytes()) };
-        match f {
-            Ok(f) => Ok(json_fn_to_string(f)),
-            Err(_) => Err(EbiError::LoadFunction),
-        }
-    }
-
-    fn get_abi_inputed_func_response<T>(&self, name: &str, input: T) -> Result<String, EbiError> {
-        let f = unsafe { self.lib.get::<JSONInputedResourceFn<T>>(name.as_bytes()) };
-        match f {
-            Ok(f) => Ok(json_fn_to_string_inputed(f, input)),
-            Err(_) => Err(EbiError::LoadFunction),
-        }
-    }
-}
-
-// TODO: Better error handling
 impl SourceLoader for Source {
     type Error = EbiError;
 
@@ -85,31 +95,12 @@ impl SourceLoader for Source {
 
     fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
         let manga_list = self.get_abi_func_response("abi_manga_list")?;
-
-        let manga = serde_json::from_str(&manga_list);
-        match manga {
-            Ok(manga) => Ok(manga),
-            Err(_) => {
-                let err: SourceErrorSerialized =
-                    serde_json::from_str(&manga_list).map_err(|_| EbiError::SerializeResponse)?;
-                Err(EbiError::LoadMangaList(err))
-            }
-        }
+        json_serialize(&manga_list)
     }
 
     fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
-        let manga = ABIChapterListInput::try_from(manga).unwrap();
-
-        let chapter_list = self.get_abi_inputed_func_response("abi_chapter_list", manga)?;
-
-        let chapters = serde_json::from_str(&chapter_list);
-        match chapters {
-            Ok(chapters) => Ok(chapters),
-            Err(_) => {
-                let err: SourceErrorSerialized =
-                    serde_json::from_str(&chapter_list).map_err(|_| EbiError::SerializeResponse)?;
-                Err(EbiError::LoadChapterList(err))
-            }
-        }
+        let manga = ABIChapterListInput::try_from(manga)?;
+        let chapter_list = self.get_abi_func_with_input_response("abi_chapter_list", manga)?;
+        json_serialize(&chapter_list)
     }
 }
