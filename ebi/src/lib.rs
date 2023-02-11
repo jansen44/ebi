@@ -1,6 +1,6 @@
 pub mod error;
 
-mod source;
+pub mod source;
 
 use ebi_source::SourceLoader;
 use error::EbiError;

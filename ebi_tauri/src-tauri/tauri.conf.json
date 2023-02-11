@@ -4,7 +4,7 @@
     "beforeBuildCommand": "pnpm build",
     "devPath": "http://localhost:1420",
     "distDir": "../build",
-    "withGlobalTauri": false
+    "withGlobalTauri": true
   },
   "package": {
     "productName": "ebi_tauri",
@@ -59,11 +59,15 @@
     },
     "windows": [
       {
-        "fullscreen": false,
-        "height": 600,
-        "resizable": true,
         "title": "Ebi Manga Reader",
-        "width": 800
+        "fullscreen": false,
+        "resizable": true,
+
+        "height": 720,
+        "width": 1280,
+
+        "minWidth": 800,
+        "minHeight": 700
       }
     ]
   }

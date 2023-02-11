@@ -546,6 +546,7 @@ dependencies = [
 name = "ebi_tauri"
 version = "0.0.0"
 dependencies = [
+ "ebi",
  "serde",
  "serde_json",
  "tauri",

@@ -1,33 +1,38 @@
-<script>
-  import Greet from "$lib/Greet.svelte";
-</script>
+<script lang="ts">
+  import { invoke } from "@tauri-apps/api";
 
-<h1>Welcome to Tauri!</h1>
+  import { selectedSource } from "../state/source";
+  import { mangaList as mangaListStore } from "../state/manga";
+  import { goto } from "$app/navigation";
 
-<div class="row">
-  <a href="https://vitejs.dev" target="_blank">
-    <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-  </a>
-  <a href="https://tauri.app" target="_blank">
-    <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-  </a>
-  <a href="https://kit.svelte.dev" target="_blank">
-    <img src="/svelte.svg" class="logo svelte" alt="Svelte Logo" />
-  </a>
-</div>
+  let sources: any = [];
 
-<p>Click on the Tauri, Vite, and Svelte logos to learn more.</p>
-
-<div class="row">
-  <Greet />
-</div>
-
-<style>
-  .logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
+  async function loadSources() {
+    sources = await invoke("sources");
   }
 
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00);
+  async function loadMangaList(source: any) {
+    const mangaList = await invoke("manga_list", {
+      identifier: source.identifier,
+    });
+    selectedSource.set(source);
+    mangaListStore.set(mangaList as Array<any>);
+
+    goto("/manga");
+  }
+
+  $: loadSources();
+</script>
+
+<div>
+  <h1>Ebi Manga Reader</h1>
+  {#each sources as source}
+    <button on:click={() => loadMangaList(source)}>{source.title}</button>
+  {/each}
+</div>
+
+<style lang="scss">
+  h1 {
+    color: white;
   }
 </style>

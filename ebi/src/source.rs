@@ -5,7 +5,7 @@ use libloading::Library;
 
 use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
 use ebi_source::prelude::{serde_json, Deserialize, SourceErrorSerialized};
-use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
+pub use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use crate::error::EbiError;
 
