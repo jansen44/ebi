@@ -47,8 +47,8 @@ mod valid_tests {
         Ok(manga)
     }
 
-    pub fn chapter_list(manga: Manga) -> Result<Vec<Chapter>, SourceError> {
-        Ok(super::get_chapters(SOURCE_IDENTIFIER, &manga, 100))
+    pub fn chapter_list(manga: &Manga) -> Result<Vec<Chapter>, SourceError> {
+        Ok(super::get_chapters(SOURCE_IDENTIFIER, manga, 100))
     }
 
     #[test]
@@ -111,8 +111,8 @@ mod valid_tests {
         let dy_source = source_manager.get(&mock_source.identifier).unwrap();
 
         for manga in mock_manga_list.iter() {
-            let mock_chapter_list = chapter_list(manga.clone()).unwrap();
-            let dy_chapter_list = dy_source.chapter_list(manga.clone()).unwrap();
+            let mock_chapter_list = chapter_list(&manga).unwrap();
+            let dy_chapter_list = dy_source.chapter_list(&manga).unwrap();
             assert_eq!(mock_chapter_list.len(), dy_chapter_list.len());
 
             for (mock, dy) in mock_chapter_list.iter().zip(dy_chapter_list.iter()) {
@@ -146,9 +146,9 @@ mod broken_tests {
         }
     }
 
-    pub fn chapter_list(manga: Manga) -> Result<Vec<Chapter>, SourceError> {
+    pub fn chapter_list(manga: &Manga) -> Result<Vec<Chapter>, SourceError> {
         if &manga.identifier == valid_manga().identifier.as_str() {
-            return Ok(super::get_chapters(SOURCE_IDENTIFIER, &manga, 100));
+            return Ok(super::get_chapters(SOURCE_IDENTIFIER, manga, 100));
         }
 
         Err(SourceError::Unknown(format!(
@@ -218,13 +218,13 @@ mod broken_tests {
         let manga = valid_manga();
         let invalid_manga = invalid_manga();
 
-        let mock_chapter_list = chapter_list(manga.clone()).unwrap();
+        let mock_chapter_list = chapter_list(&manga).unwrap();
 
         let mut source_manager = SourceManager::new(SOURCE_DIR);
         source_manager.load_source(&source.identifier).unwrap();
         let source = source_manager.get(&source.identifier).unwrap();
 
-        let valid_chapter_list = source.chapter_list(manga.clone()).unwrap();
+        let valid_chapter_list = source.chapter_list(&manga).unwrap();
 
         for (mock, dy) in mock_chapter_list.iter().zip(valid_chapter_list.iter()) {
             assert_eq!(mock.chapter, dy.chapter);
@@ -234,7 +234,7 @@ mod broken_tests {
             assert_eq!(mock.source_identifier, dy.source_identifier);
         }
 
-        let err_chapter_list = source.chapter_list(invalid_manga);
+        let err_chapter_list = source.chapter_list(&invalid_manga);
         assert!(err_chapter_list.is_err());
     }
 }

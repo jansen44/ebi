@@ -12,12 +12,12 @@ pub struct ABIChapterListInput {
     pub manga_url: *mut c_char,
 }
 
-impl std::convert::TryFrom<Manga> for ABIChapterListInput {
+impl std::convert::TryFrom<&Manga> for ABIChapterListInput {
     type Error = SourceError;
 
-    fn try_from(manga: Manga) -> Result<Self, Self::Error> {
-        let manga_identifier = CString::new(manga.identifier)?;
-        let manga_url = CString::new(manga.url)?;
+    fn try_from(manga: &Manga) -> Result<Self, Self::Error> {
+        let manga_identifier = CString::new(manga.identifier.as_str())?;
+        let manga_url = CString::new(manga.url.as_str())?;
 
         let manga_identifier = manga_identifier.into_raw();
         let manga_url = manga_url.into_raw();
@@ -36,11 +36,11 @@ pub struct ABIChapterPageListInput {
     pub manga_identifier: *mut c_char,
 }
 
-impl std::convert::TryFrom<Chapter> for ABIChapterPageListInput {
+impl std::convert::TryFrom<&Chapter> for ABIChapterPageListInput {
     type Error = SourceError;
-    fn try_from(chapter: Chapter) -> Result<Self, Self::Error> {
-        let chapter_url = CString::new(chapter.url)?;
-        let manga_identifier = CString::new(chapter.manga_identifier)?;
+    fn try_from(chapter: &Chapter) -> Result<Self, Self::Error> {
+        let chapter_url = CString::new(chapter.url.as_str())?;
+        let manga_identifier = CString::new(chapter.manga_identifier.as_str())?;
 
         let chapter_url = chapter_url.into_raw();
         let manga_identifier = manga_identifier.into_raw();

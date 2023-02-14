@@ -98,7 +98,7 @@ impl SourceLoader for Source {
         json_serialize(&manga_list)
     }
 
-    fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error> {
+    fn chapter_list(&self, manga: &Manga) -> Result<Vec<Chapter>, Self::Error> {
         let manga = ABIChapterListInput::try_from(manga)?;
         let chapter_list = self.get_abi_func_with_input_response("abi_chapter_list", manga)?;
         json_serialize(&chapter_list)

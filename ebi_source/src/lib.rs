@@ -5,7 +5,7 @@ pub mod error;
 pub mod locale;
 pub mod prelude;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Chapter {
     pub chapter: u16,
     pub title: String,
@@ -14,7 +14,7 @@ pub struct Chapter {
     pub source_identifier: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Manga {
     pub identifier: String,
     pub title: String,
@@ -39,5 +39,5 @@ pub trait SourceLoader {
     fn source(&self) -> Result<Source, Self::Error>;
 
     fn manga_list(&self) -> Result<Vec<Manga>, Self::Error>;
-    fn chapter_list(&self, manga: Manga) -> Result<Vec<Chapter>, Self::Error>;
+    fn chapter_list(&self, manga: &Manga) -> Result<Vec<Chapter>, Self::Error>;
 }
