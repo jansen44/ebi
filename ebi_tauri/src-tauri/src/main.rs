@@ -3,8 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use ebi::source::{EbiSource, Manga, SourceLoader};
-use ebi::SourceManager;
+use ebi::sources::{EbiManga, EbiSource, SourceLoader, SourceManager};
 use tauri::State;
 
 #[tauri::command]
@@ -18,7 +17,7 @@ fn sources(source_manager: State<SourceManager>) -> Vec<EbiSource> {
 }
 
 #[tauri::command]
-fn manga_list(identifier: &str, source_manager: State<SourceManager>) -> Option<Vec<Manga>> {
+fn manga_list(identifier: &str, source_manager: State<SourceManager>) -> Option<Vec<EbiManga>> {
     let source = source_manager.get(identifier)?;
     let manga = source.manga_list();
 

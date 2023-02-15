@@ -5,9 +5,10 @@ use libloading::Library;
 
 use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
 use ebi_source::prelude::{serde_json, Deserialize, SourceErrorSerialized};
-pub use ebi_source::{Chapter, Manga, Source as EbiSource, SourceLoader};
 
 use crate::error::EbiError;
+
+use super::{EbiChapter, EbiManga, EbiSource, SourceLoader};
 
 fn ptr_to_string(ptr: *mut i8) -> String {
     let string = unsafe { CString::from_raw(ptr) };
@@ -93,12 +94,12 @@ impl SourceLoader for Source {
         Ok(self.source.clone())
     }
 
-    fn manga_list(&self) -> Result<Vec<Manga>, Self::Error> {
+    fn manga_list(&self) -> Result<Vec<EbiManga>, Self::Error> {
         let manga_list = self.get_abi_func_response("abi_manga_list")?;
         json_serialize(&manga_list)
     }
 
-    fn chapter_list(&self, manga: &Manga) -> Result<Vec<Chapter>, Self::Error> {
+    fn chapter_list(&self, manga: &EbiManga) -> Result<Vec<EbiChapter>, Self::Error> {
         let manga = ABIChapterListInput::try_from(manga)?;
         let chapter_list = self.get_abi_func_with_input_response("abi_chapter_list", manga)?;
         json_serialize(&chapter_list)

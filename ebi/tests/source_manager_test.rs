@@ -15,7 +15,7 @@ fn get_chapters(
 }
 
 mod valid_tests {
-    use ebi::SourceManager;
+    use ebi::sources::SourceManager;
     use ebi_source::{locale, prelude::SourceError, Chapter, Manga, Source, SourceLoader};
 
     const SOURCE_DIR: &str = "../target/debug";
@@ -127,7 +127,7 @@ mod valid_tests {
 }
 
 mod broken_tests {
-    use ebi::SourceManager;
+    use ebi::sources::SourceManager;
     use ebi_source::{error::SourceError, locale, Chapter, Manga, Source, SourceLoader};
 
     const SOURCE_DIR: &str = "../target/debug";
