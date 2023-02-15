@@ -28,6 +28,20 @@ pub struct SourceManager {
     sources: HashMap<String, Source>,
 }
 
+#[cfg(target_family = "unix")]
+impl std::default::Default for SourceManager {
+    fn default() -> Self {
+        let home = std::env::var("HOME").unwrap();
+        let path = PathBuf::from(format!("{}/.ebi", home));
+        std::fs::create_dir_all(&path).unwrap();
+
+        Self {
+            dir_path: path,
+            sources: HashMap::new(),
+        }
+    }
+}
+
 impl SourceManager {
     pub fn new(dir_path: &str) -> Self {
         let dir_path = PathBuf::from(dir_path);
@@ -36,6 +50,45 @@ impl SourceManager {
             dir_path,
             sources: HashMap::new(),
         }
+    }
+
+    pub fn load_local_sources(&mut self) -> Result<(), EbiError> {
+        let mut sources_dir = self.dir_path.clone();
+        sources_dir.push("sources");
+
+        let source_dirs = std::fs::read_dir(&sources_dir).unwrap();
+
+        let source_dirs = source_dirs
+            .filter(|d| d.is_ok())
+            .map(|d| d.unwrap())
+            .filter(|d| d.metadata().is_ok())
+            .filter(|d| d.metadata().unwrap().is_dir());
+
+        for dir in source_dirs {
+            let identifier = dir.file_name();
+            let identifier = identifier.to_string_lossy().into_owned();
+            let target_file = handle_source_file_extension(&identifier);
+
+            let mut file_path = dir.path();
+            file_path.push(target_file);
+
+            if !file_path.exists() {
+                println!("File {} does not exists", file_path.display());
+                continue;
+            }
+
+            match Source::try_from(file_path) {
+                Ok(source) => {
+                    let identifier = source.source()?.identifier.clone();
+                    self.sources.insert(identifier, source);
+                }
+                Err(e) => {
+                    println!("ERROR::{}", e);
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn load_source(&mut self, identifier: &str) -> Result<(), EbiError> {
