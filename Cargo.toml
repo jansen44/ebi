@@ -2,7 +2,6 @@
 members = [
   "ebi",
   
-  "ebi_tauri/src-tauri",
   "ebi_source",
   "ebi_source_macros",
   
