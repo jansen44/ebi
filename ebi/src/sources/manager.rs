@@ -5,7 +5,7 @@ use crate::archive;
 use crate::error::EbiError;
 
 use super::loader::Source;
-use super::EbiManga;
+use super::{EbiManga, EbiSource};
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -52,6 +52,10 @@ impl SourceManager {
             dir_path,
             sources: HashMap::new(),
         }
+    }
+
+    pub fn dir(&self) -> PathBuf {
+        self.dir_path.clone()
     }
 
     pub fn load_local_sources(&mut self) -> Result<(), EbiError> {
@@ -110,8 +114,11 @@ impl SourceManager {
         Ok(())
     }
 
-    pub fn available_sources(&self) -> Vec<String> {
-        self.sources.iter().map(|(key, _)| key.clone()).collect()
+    pub fn sources(&self) -> Vec<EbiSource> {
+        self.sources
+            .iter()
+            .map(|(_, source)| source.source().unwrap())
+            .collect()
     }
 
     pub fn manga_list(&self, source: &str) -> Result<Vec<EbiManga>, EbiError> {

@@ -6,8 +6,6 @@ fn main() {
     let mut sources = SourceManager::default();
     sources.load_local_sources().unwrap();
 
-    println!("{:?}", sources.available_sources());
-
     let manga = sources.manga_list("opex").unwrap();
 
     for m in manga {
