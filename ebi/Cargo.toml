@@ -3,7 +3,12 @@ name = "ebi"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "playground"
+path = "./bin/main.rs"
+
 [dependencies]
 thiserror = "1.0"
 libloading = "0.7"
 ebi_source = { path = "../ebi_source" }
+ureq = "2.6.2"

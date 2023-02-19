@@ -1,9 +1,11 @@
 use ebi_source::SourceLoader;
 use std::{collections::HashMap, path::PathBuf};
 
+use crate::archive;
 use crate::error::EbiError;
 
 use super::loader::Source;
+use super::EbiManga;
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -108,11 +110,51 @@ impl SourceManager {
         Ok(())
     }
 
-    pub fn get(&self, identifier: &str) -> Option<&Source> {
-        self.sources.get(identifier)
-    }
-
     pub fn available_sources(&self) -> Vec<String> {
         self.sources.iter().map(|(key, _)| key.clone()).collect()
+    }
+
+    pub fn manga_list(&self, source: &str) -> Result<Vec<EbiManga>, EbiError> {
+        let source = self.sources.get(source).ok_or(EbiError::InvalidSource)?;
+        let manga_list = source.manga_list()?;
+
+        Ok(manga_list
+            .into_iter()
+            .map(|manga| self.init_manga(manga))
+            .collect())
+    }
+
+    fn init_manga(&self, manga: EbiManga) -> EbiManga {
+        let mut dir_path = self.dir_path.clone();
+        dir_path.push(format!(
+            "sources/{}/manga/{}",
+            &manga.source_identifier, &manga.identifier
+        ));
+        std::fs::create_dir_all(&dir_path).unwrap();
+
+        let mut manga = manga;
+        let mut cached_logo = false;
+
+        for d in std::fs::read_dir(dir_path.clone()).unwrap() {
+            let f = d.unwrap();
+            let f_name = f.file_name().to_str().unwrap().to_owned();
+            let mut f_path = dir_path.clone();
+
+            if f_name.contains("logo") {
+                f_path.push(f_name);
+                manga.cover = f_path.to_string_lossy().into_owned();
+                cached_logo = true;
+                break;
+            }
+        }
+
+        if !cached_logo {
+            let file_ext = archive::http_download(&manga.cover, "logo", dir_path.clone()).unwrap();
+            let mut f_path = dir_path.clone();
+            f_path.push(format!("logo.{}", file_ext));
+            manga.cover = f_path.to_string_lossy().into_owned();
+        }
+
+        manga
     }
 }

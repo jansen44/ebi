@@ -30,7 +30,11 @@ impl std::fmt::Display for KnownFileExtensions {
     }
 }
 
-pub fn http_download<P>(url: &str, file_name: &str, target_dir: P) -> Result<(), EbiError>
+pub fn http_download<P>(
+    url: &str,
+    file_name: &str,
+    target_dir: P,
+) -> Result<KnownFileExtensions, EbiError>
 where
     P: AsRef<Path>,
 {
@@ -55,5 +59,5 @@ where
 
     std::fs::write(path, buffer).map_err(|e| EbiError::CouldNotSaveFile(e.to_string()))?;
 
-    Ok(())
+    Ok(file_ext)
 }

@@ -9,6 +9,8 @@ pub enum EbiError {
 
     #[error("DUPLICATED_SOURCE")]
     DuplicatedSource,
+    #[error("INVALID_SOURCE")]
+    InvalidSource,
 
     #[error("COULD_NOT_LOAD_LIB")]
     LoadLib,
