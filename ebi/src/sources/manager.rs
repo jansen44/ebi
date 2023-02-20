@@ -144,7 +144,8 @@ impl SourceManager {
             .sources
             .get(&chapter.source_identifier)
             .ok_or(EbiError::InvalidSource)?;
-        source.chapter_page_list(chapter)
+        let pages = source.chapter_page_list(chapter)?;
+        Ok(Self::init_chapter_pages(&self, chapter, pages))
     }
 
     fn init_manga(&self, manga: EbiManga) -> EbiManga {
@@ -179,5 +180,42 @@ impl SourceManager {
         }
 
         manga
+    }
+
+    fn init_chapter_pages(&self, chapter: &EbiChapter, pages: Vec<String>) -> Vec<String> {
+        let mut dir_path = self.dir_path.clone();
+        dir_path.push(format!(
+            "sources/{}/manga/{}/{}",
+            &chapter.source_identifier, &chapter.manga_identifier, chapter.chapter
+        ));
+        std::fs::create_dir_all(&dir_path).unwrap();
+
+        let mut cached_pages = vec![];
+        for cached_page in std::fs::read_dir(dir_path.clone()).unwrap() {
+            let cached_page = cached_page.unwrap();
+            let ext = cached_page.path();
+            let ext = ext.extension().unwrap();
+            let ext = ext.to_string_lossy().into_owned();
+
+            if &ext == "jpg" || &ext == "jpeg" || &ext == "png" {
+                cached_pages.push(cached_page.file_name().to_string_lossy().into_owned());
+            }
+        }
+
+        let mut pages = pages;
+        for (i, page) in pages.iter_mut().enumerate() {
+            let cached = cached_pages.iter().find(|cp| cp.contains(&format!("{i}")));
+
+            if let Some(cached_page) = cached {
+                *page = cached_page.clone();
+                continue;
+            }
+            let file_ext =
+                archive::http_download(&page, &format!("{i}"), dir_path.clone()).unwrap();
+            let mut f_path = dir_path.clone();
+            f_path.push(format!("{i}.{}", file_ext));
+            *page = f_path.to_string_lossy().into_owned();
+        }
+        pages
     }
 }
