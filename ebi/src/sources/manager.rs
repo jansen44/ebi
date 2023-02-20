@@ -198,13 +198,15 @@ impl SourceManager {
             let ext = ext.to_string_lossy().into_owned();
 
             if &ext == "jpg" || &ext == "jpeg" || &ext == "png" {
-                cached_pages.push(cached_page.file_name().to_string_lossy().into_owned());
+                cached_pages.push(cached_page.path().to_string_lossy().into_owned());
             }
         }
 
         let mut pages = pages;
         for (i, page) in pages.iter_mut().enumerate() {
-            let cached = cached_pages.iter().find(|cp| cp.contains(&format!("{i}")));
+            let cached = cached_pages
+                .iter()
+                .find(|cp| cp.contains(&format!("/{i}.")));
 
             if let Some(cached_page) = cached {
                 *page = cached_page.clone();
