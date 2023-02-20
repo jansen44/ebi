@@ -4,7 +4,9 @@ use std::path::PathBuf;
 use libloading::Library;
 
 use ebi_source::abi::{ABIChapterListInput, JSONInputedResourceFn, JSONResourceFn};
-use ebi_source::prelude::{serde_json, Deserialize, SourceErrorSerialized};
+use ebi_source::prelude::{
+    serde_json, ABIChapterPageListInput, Deserialize, SourceErrorSerialized,
+};
 
 use crate::error::EbiError;
 
@@ -120,5 +122,14 @@ impl SourceLoader for Source {
             arg: Some(manga),
         })?;
         deserialize(&chapter_list)
+    }
+
+    fn chapter_page_list(&self, chapter: &EbiChapter) -> Result<Vec<String>, Self::Error> {
+        let chapter = ABIChapterPageListInput::try_from(chapter)?;
+        let chapter_page_list = self.exec_abi_fn(AbiFn {
+            name: "abi_chapter_page_list",
+            arg: Some(chapter),
+        })?;
+        deserialize(&chapter_page_list)
     }
 }

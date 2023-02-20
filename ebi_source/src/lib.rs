@@ -40,4 +40,5 @@ pub trait SourceLoader {
 
     fn manga_list(&self) -> Result<Vec<Manga>, Self::Error>;
     fn chapter_list(&self, manga: &Manga) -> Result<Vec<Chapter>, Self::Error>;
+    fn chapter_page_list(&self, chapter: &Chapter) -> Result<Vec<String>, Self::Error>;
 }

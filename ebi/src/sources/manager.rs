@@ -1,11 +1,11 @@
-use ebi_source::SourceLoader;
+use ebi_source::{Chapter, SourceLoader};
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::archive;
 use crate::error::EbiError;
 
 use super::loader::Source;
-use super::{EbiManga, EbiSource};
+use super::{EbiChapter, EbiManga, EbiSource};
 
 #[cfg(target_os = "macos")]
 fn handle_source_file_extension(identifier: &str) -> PathBuf {
@@ -129,6 +129,22 @@ impl SourceManager {
             .into_iter()
             .map(|manga| self.init_manga(manga))
             .collect())
+    }
+
+    pub fn chapter_list(&self, manga: &EbiManga) -> Result<Vec<Chapter>, EbiError> {
+        let source = self
+            .sources
+            .get(&manga.source_identifier.clone())
+            .ok_or(EbiError::InvalidSource)?;
+        source.chapter_list(manga)
+    }
+
+    pub fn chapter_page_list(&self, chapter: &EbiChapter) -> Result<Vec<String>, EbiError> {
+        let source = self
+            .sources
+            .get(&chapter.source_identifier)
+            .ok_or(EbiError::InvalidSource)?;
+        source.chapter_page_list(chapter)
     }
 
     fn init_manga(&self, manga: EbiManga) -> EbiManga {
