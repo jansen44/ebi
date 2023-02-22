@@ -96,6 +96,7 @@ impl SourceManager {
         source_dir
     }
 
+    // TODO: Refactor this later (probably after adding "install source" support)
     pub fn load_sources(&mut self) -> Result<(), EbiError> {
         let source_dir_entries = std::fs::read_dir(self.source_dir()).unwrap();
 
