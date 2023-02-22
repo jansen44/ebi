@@ -2,34 +2,6 @@ use std::path::{Path, PathBuf};
 
 use crate::error::EbiError;
 
-pub enum KnownFileExtensions {
-    Jpeg,
-    Png,
-}
-
-impl KnownFileExtensions {
-    pub fn try_from_content_type(header: &str) -> Result<Self, EbiError> {
-        match header {
-            "image/jpeg" => Ok(Self::Jpeg),
-            "image/png" => Ok(Self::Png),
-            _ => Err(EbiError::UnsupportedFile(String::from(header))),
-        }
-    }
-}
-
-impl std::fmt::Display for KnownFileExtensions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Jpeg => "jpg",
-                Self::Png => "png",
-            }
-        )
-    }
-}
-
 pub fn http_download<P>(
     url: &str,
     file_name: &str,
@@ -60,4 +32,32 @@ where
     std::fs::write(path, buffer).map_err(|e| EbiError::CouldNotSaveFile(e.to_string()))?;
 
     Ok(file_ext)
+}
+
+pub enum KnownFileExtensions {
+    Jpeg,
+    Png,
+}
+
+impl KnownFileExtensions {
+    pub fn try_from_content_type(header: &str) -> Result<Self, EbiError> {
+        match header {
+            "image/jpeg" => Ok(Self::Jpeg),
+            "image/png" => Ok(Self::Png),
+            _ => Err(EbiError::UnsupportedFile(String::from(header))),
+        }
+    }
+}
+
+impl std::fmt::Display for KnownFileExtensions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Jpeg => "jpg",
+                Self::Png => "png",
+            }
+        )
+    }
 }

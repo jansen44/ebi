@@ -58,34 +58,51 @@ impl SourceManager {
         self.dir_path.clone()
     }
 
-    pub fn load_local_sources(&mut self) -> Result<(), EbiError> {
-        let mut sources_dir = self.dir_path.clone();
-        sources_dir.push("sources");
+    // <self.dir>/sources
+    pub fn source_dir(&self) -> PathBuf {
+        let mut source_dir = self.dir_path.clone();
+        source_dir.push("sources");
+        source_dir
+    }
 
-        let source_dirs = std::fs::read_dir(&sources_dir).unwrap();
+    pub fn load_sources(&mut self) -> Result<(), EbiError> {
+        let source_dir_entries = std::fs::read_dir(self.source_dir()).unwrap();
 
-        let source_dirs = source_dirs
+        let source_dir_directories = source_dir_entries
             .filter(|d| d.is_ok())
             .map(|d| d.unwrap())
             .filter(|d| d.metadata().is_ok())
             .filter(|d| d.metadata().unwrap().is_dir());
 
-        for dir in source_dirs {
+        for dir in source_dir_directories {
             let identifier = dir.file_name();
-            let identifier = identifier.to_string_lossy().into_owned();
-            let target_file = handle_source_file_extension(&identifier);
+            let identifier = identifier.to_str();
+
+            if let None = identifier {
+                log::warn!(
+                    "Could not load source file at {} :: invalid os file_name",
+                    dir.path().display()
+                );
+                continue;
+            }
+
+            let target_file = handle_source_file_extension(identifier.unwrap());
 
             let mut file_path = dir.path();
             file_path.push(target_file);
 
             if !file_path.exists() {
-                println!("File {} does not exists", file_path.display());
+                log::warn!(
+                    "Could not load source file {} :: file does not exists",
+                    file_path.display()
+                );
                 continue;
             }
 
             match Source::try_from(file_path) {
                 Ok(source) => {
                     let identifier = source.source()?.identifier.clone();
+                    log::info!("Loaded source {}", &identifier);
                     self.sources.insert(identifier, source);
                 }
                 Err(e) => {
@@ -93,23 +110,6 @@ impl SourceManager {
                 }
             }
         }
-
-        Ok(())
-    }
-
-    pub fn load_source(&mut self, identifier: &str) -> Result<(), EbiError> {
-        if self.sources.contains_key(identifier) {
-            return Err(EbiError::DuplicatedSource);
-        }
-
-        let file_name = handle_source_file_extension(identifier);
-
-        let mut path = self.dir_path.clone();
-        path.push(file_name);
-
-        let source = Source::try_from(path)?;
-        let identifier = source.source()?.identifier.clone();
-        self.sources.insert(identifier, source);
 
         Ok(())
     }
