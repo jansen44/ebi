@@ -1,7 +1,6 @@
-use ebi_source::{Chapter, SourceLoader};
+use ebi_source::SourceLoader;
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::archive;
 use crate::error::EbiError;
 
 use super::loader::Source;
@@ -44,6 +43,38 @@ impl std::default::Default for SourceManager {
     }
 }
 
+// Resource loading
+impl SourceManager {
+    pub fn sources(&self) -> Vec<EbiSource> {
+        self.sources
+            .iter()
+            .map(|(_, source)| source.source().unwrap())
+            .collect()
+    }
+
+    pub fn manga_list(&self, source: &str) -> Result<Vec<EbiManga>, EbiError> {
+        let source = self.sources.get(source).ok_or(EbiError::InvalidSource)?;
+        source.manga_list()
+    }
+
+    pub fn chapter_list(&self, manga: &EbiManga) -> Result<Vec<EbiChapter>, EbiError> {
+        let source = self
+            .sources
+            .get(&manga.source_identifier.clone())
+            .ok_or(EbiError::InvalidSource)?;
+        source.chapter_list(manga)
+    }
+
+    pub fn chapter_page_list(&self, chapter: &EbiChapter) -> Result<Vec<String>, EbiError> {
+        let source = self
+            .sources
+            .get(&chapter.source_identifier)
+            .ok_or(EbiError::InvalidSource)?;
+        source.chapter_page_list(chapter)
+    }
+}
+
+// Initialization/Setup
 impl SourceManager {
     pub fn new(dir_path: &str) -> Self {
         let dir_path = PathBuf::from(dir_path);
@@ -112,112 +143,5 @@ impl SourceManager {
         }
 
         Ok(())
-    }
-
-    pub fn sources(&self) -> Vec<EbiSource> {
-        self.sources
-            .iter()
-            .map(|(_, source)| source.source().unwrap())
-            .collect()
-    }
-
-    pub fn manga_list(&self, source: &str) -> Result<Vec<EbiManga>, EbiError> {
-        let source = self.sources.get(source).ok_or(EbiError::InvalidSource)?;
-        let manga_list = source.manga_list()?;
-
-        Ok(manga_list
-            .into_iter()
-            .map(|manga| self.init_manga(manga))
-            .collect())
-    }
-
-    pub fn chapter_list(&self, manga: &EbiManga) -> Result<Vec<Chapter>, EbiError> {
-        let source = self
-            .sources
-            .get(&manga.source_identifier.clone())
-            .ok_or(EbiError::InvalidSource)?;
-        source.chapter_list(manga)
-    }
-
-    pub fn chapter_page_list(&self, chapter: &EbiChapter) -> Result<Vec<String>, EbiError> {
-        let source = self
-            .sources
-            .get(&chapter.source_identifier)
-            .ok_or(EbiError::InvalidSource)?;
-        let pages = source.chapter_page_list(chapter)?;
-        Ok(Self::init_chapter_pages(&self, chapter, pages))
-    }
-
-    fn init_manga(&self, manga: EbiManga) -> EbiManga {
-        let mut dir_path = self.dir_path.clone();
-        dir_path.push(format!(
-            "sources/{}/manga/{}",
-            &manga.source_identifier, &manga.identifier
-        ));
-        std::fs::create_dir_all(&dir_path).unwrap();
-
-        let mut manga = manga;
-        let mut cached_logo = false;
-
-        for d in std::fs::read_dir(dir_path.clone()).unwrap() {
-            let f = d.unwrap();
-            let f_name = f.file_name().to_str().unwrap().to_owned();
-            let mut f_path = dir_path.clone();
-
-            if f_name.contains("logo") {
-                f_path.push(f_name);
-                manga.cover = f_path.to_string_lossy().into_owned();
-                cached_logo = true;
-                break;
-            }
-        }
-
-        if !cached_logo {
-            let file_ext = archive::http_download(&manga.cover, "logo", dir_path.clone()).unwrap();
-            let mut f_path = dir_path.clone();
-            f_path.push(format!("logo.{}", file_ext));
-            manga.cover = f_path.to_string_lossy().into_owned();
-        }
-
-        manga
-    }
-
-    fn init_chapter_pages(&self, chapter: &EbiChapter, pages: Vec<String>) -> Vec<String> {
-        let mut dir_path = self.dir_path.clone();
-        dir_path.push(format!(
-            "sources/{}/manga/{}/{}",
-            &chapter.source_identifier, &chapter.manga_identifier, chapter.chapter
-        ));
-        std::fs::create_dir_all(&dir_path).unwrap();
-
-        let mut cached_pages = vec![];
-        for cached_page in std::fs::read_dir(dir_path.clone()).unwrap() {
-            let cached_page = cached_page.unwrap();
-            let ext = cached_page.path();
-            let ext = ext.extension().unwrap();
-            let ext = ext.to_string_lossy().into_owned();
-
-            if &ext == "jpg" || &ext == "jpeg" || &ext == "png" {
-                cached_pages.push(cached_page.path().to_string_lossy().into_owned());
-            }
-        }
-
-        let mut pages = pages;
-        for (i, page) in pages.iter_mut().enumerate() {
-            let cached = cached_pages
-                .iter()
-                .find(|cp| cp.contains(&format!("/{i}.")));
-
-            if let Some(cached_page) = cached {
-                *page = cached_page.clone();
-                continue;
-            }
-            let file_ext =
-                archive::http_download(&page, &format!("{i}"), dir_path.clone()).unwrap();
-            let mut f_path = dir_path.clone();
-            f_path.push(format!("{i}.{}", file_ext));
-            *page = f_path.to_string_lossy().into_owned();
-        }
-        pages
     }
 }

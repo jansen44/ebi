@@ -5,7 +5,7 @@ pub mod error;
 pub mod locale;
 pub mod prelude;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Chapter {
     pub chapter: u16,
     pub title: String,
@@ -14,7 +14,7 @@ pub struct Chapter {
     pub source_identifier: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Manga {
     pub identifier: String,
     pub title: String,

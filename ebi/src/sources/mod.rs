@@ -1,3 +1,4 @@
+pub mod archive;
 pub(crate) mod loader;
 pub mod manager;
 

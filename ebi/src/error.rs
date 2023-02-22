@@ -62,3 +62,9 @@ impl std::convert::From<ureq::Error> for EbiError {
         }
     }
 }
+
+impl std::convert::From<std::io::Error> for EbiError {
+    fn from(value: std::io::Error) -> Self {
+        Self::Unknown(format!("{}", value))
+    }
+}
