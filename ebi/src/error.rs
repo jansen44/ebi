@@ -16,10 +16,8 @@ pub enum EbiError {
     LoadLib,
     #[error("COULD_NOT_LOAD_FUNCTION")]
     LoadFunction,
-    #[error("COULD_NOT_LOAD_MANGA_LIST::{0:?}")]
-    LoadMangaList(SourceErrorSerialized),
-    #[error("COULD_NOT_LOAD_CHAPTER_LIST::{0:?}")]
-    LoadChapterList(SourceErrorSerialized),
+    #[error("SOURCE_RETURNED_ERRORED_RESPONSE")]
+    SourceResponseError(SourceErrorSerialized),
 
     #[error("COULD_NOT_SERIALIZE_LIB_RESPONSE")]
     SerializeResponse,

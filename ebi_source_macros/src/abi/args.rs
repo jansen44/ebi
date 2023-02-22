@@ -1,14 +1,6 @@
 use proc_macro2::TokenStream;
 
 pub trait GenArgsExt {
-    fn args_list(&self) -> TokenStream;
-    fn args_parsing(&self) -> TokenStream;
-    fn call(&self, name: &TokenStream) -> TokenStream;
-}
-
-pub struct NonArgFunctions;
-
-impl GenArgsExt for NonArgFunctions {
     fn args_list(&self) -> TokenStream {
         quote::quote! {}
     }
@@ -21,6 +13,9 @@ impl GenArgsExt for NonArgFunctions {
         quote::quote! { #name() }
     }
 }
+
+pub struct NonArgFunctions;
+impl GenArgsExt for NonArgFunctions {}
 
 pub struct ChapterListFunction;
 
