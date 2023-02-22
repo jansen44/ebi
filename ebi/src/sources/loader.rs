@@ -14,10 +14,12 @@ use super::{ptr_to_string, EbiChapter, EbiManga, EbiSource, SourceLoader};
 macro_rules! abi_fn_response_to_string {
     ($f:expr) => {{
         let response = $f();
+        log::debug!("No-args source fn response from {:?}", $f);
         ptr_to_string(response)
     }};
     ($f:expr, $input:expr) => {{
         let response = $f($input);
+        log::debug!("Args source fn response from {:?}", $f);
         ptr_to_string(response)
     }};
 }
@@ -36,7 +38,8 @@ impl std::convert::TryFrom<PathBuf> for Source {
     type Error = EbiError;
 
     fn try_from(source_path: PathBuf) -> Result<Self, Self::Error> {
-        let lib = unsafe { Library::new(source_path).map_err(|_| EbiError::LoadLib)? };
+        let lib = unsafe { Library::new(source_path.clone()).map_err(|_| EbiError::LoadLib)? };
+        log::debug!("Loaded Source from {}", source_path.display());
 
         let source_fn = unsafe {
             lib.get::<JSONResourceFn>(b"abi_source")
@@ -54,7 +57,6 @@ impl Source {
         let f = abi_fn.name.as_bytes();
         unsafe {
             match abi_fn.arg {
-                // With Arg
                 Some(arg) => {
                     let f = self.lib.get::<JSONInputedResourceFn<T>>(f);
                     match f {
@@ -62,7 +64,6 @@ impl Source {
                         Err(_) => Err(EbiError::LoadFunction),
                     }
                 }
-                // Without Arg
                 None => {
                     let f = self.lib.get::<JSONResourceFn>(f);
                     match f {
