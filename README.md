@@ -1,6 +1,6 @@
 # Ebi Manga Reader
 
-Ebi is a simple manga reader backend targeting desktop based on plugins inspired by [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) (which is incredible).
+Ebi is a manga reader backend targeting desktop based on plugins inspired by [Tachiyomi](https://github.com/tachiyomiorg/tachiyomi) (which is incredible for mobile use).
 
 ## EARLY DEVELOPMENT
 
