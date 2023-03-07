@@ -1,5 +1,4 @@
 use ebi_source::error::SourceError;
-use ebi_source::prelude::*;
 use ebi_source::{locale, Chapter, Manga, Source};
 use ebi_source_macros::ebi_plugin;
 
@@ -9,7 +8,7 @@ const SOURCE_DESCRIPTION: &str =
     "This is just a mocked source only intended to be used for tests! No real content here";
 
 #[ebi_plugin]
-pub fn source() -> Result<Source, SourceError> {
+pub fn source_info() -> Result<Source, SourceError> {
     Ok(Source {
         identifier: SOURCE_IDENTIFIER.to_owned(),
         title: SOURCE_TITLE.to_owned(),
@@ -27,7 +26,7 @@ pub fn manga_list() -> Result<Vec<Manga>, SourceError> {
         genres: vec!["shounen".to_string(), "fantasy".to_string()],
         description: Some("Rubber pirate boy adventures".to_string()),
         url: "/manga/one-piece".to_string(),
-        source_identifier: SOURCE_IDENTIFIER.to_string(),
+        source: SOURCE_IDENTIFIER.to_string(),
     }];
     Ok(manga)
 }
@@ -40,7 +39,7 @@ pub fn chapter_list(
     Ok(get_chapters(&manga_identifier, &manga_url, 100))
 }
 
-fn get_chapters(identifier: &str, url: &str, size: u16) -> Vec<Chapter> {
+fn get_chapters(identifier: &str, url: &str, size: u32) -> Vec<Chapter> {
     let manga = manga_list().unwrap();
     let manga = manga.iter().find(|m| m.identifier == identifier).unwrap();
     (1..size + 1)
@@ -48,8 +47,8 @@ fn get_chapters(identifier: &str, url: &str, size: u16) -> Vec<Chapter> {
             chapter,
             title: format!("{} -- {}", &manga.title, chapter),
             url: format!("{}/{}", url, chapter),
-            manga_identifier: identifier.to_string(),
-            source_identifier: SOURCE_IDENTIFIER.to_string(),
+            manga: identifier.to_string(),
+            source: SOURCE_IDENTIFIER.to_string(),
         })
         .collect()
 }

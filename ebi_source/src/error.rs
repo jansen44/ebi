@@ -13,9 +13,13 @@ pub enum SourceError {
     Serialize,
     #[error("INVALID_IDENTIFIER_PROVIDED")]
     InvalidIdentifier,
+    #[error("INVALID_SOURCE_PROVIDED")]
+    InvalidSource,
 
     #[error("ABI_NULL_CONVERSION_ERROR")]
     ABINullConversion,
+    #[error("ABI_RESULT_ERROR::{0}")]
+    ABIResult(String),
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -26,5 +30,19 @@ pub struct SourceErrorSerialized {
 impl std::convert::From<NulError> for SourceError {
     fn from(_: NulError) -> Self {
         Self::ABINullConversion
+    }
+}
+
+impl std::str::FromStr for SourceError {
+    type Err = SourceError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "COULD_NOT_FETCH_DATA" => Ok(Self::Fetch),
+            "COULD_NOT_SERIALIZE_DATA" => Ok(Self::Serialize),
+            "INVALID_IDENTIFIER_PROVIDED" => Ok(Self::InvalidIdentifier),
+            "INVALID_SOURCE_PROVIDED" => Ok(Self::InvalidSource),
+            _ => Ok(Self::Unknown(s.to_string())),
+        }
     }
 }

@@ -48,7 +48,7 @@ impl SourceManager {
     pub fn sources(&self) -> Vec<EbiSource> {
         self.sources
             .iter()
-            .map(|(_, source)| source.source().unwrap())
+            .map(|(_, source)| source.source_info().unwrap())
             .collect()
     }
 
@@ -60,7 +60,7 @@ impl SourceManager {
     pub fn chapter_list(&self, manga: &EbiManga) -> Result<Vec<EbiChapter>, EbiError> {
         let source = self
             .sources
-            .get(&manga.source_identifier.clone())
+            .get(&manga.source.clone())
             .ok_or(EbiError::InvalidSource)?;
         source.chapter_list(manga)
     }
@@ -68,7 +68,7 @@ impl SourceManager {
     pub fn chapter_page_list(&self, chapter: &EbiChapter) -> Result<Vec<String>, EbiError> {
         let source = self
             .sources
-            .get(&chapter.source_identifier)
+            .get(&chapter.source)
             .ok_or(EbiError::InvalidSource)?;
         source.chapter_page_list(chapter)
     }
@@ -133,7 +133,7 @@ impl SourceManager {
 
             match Source::try_from(file_path) {
                 Ok(source) => {
-                    let identifier = source.source()?.identifier.clone();
+                    let identifier = source.source_info()?.identifier.clone();
                     log::info!("Loaded source {}", &identifier);
                     self.sources.insert(identifier, source);
                 }

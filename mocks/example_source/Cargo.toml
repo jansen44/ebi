@@ -1,5 +1,5 @@
 [package]
-name = "invalid_source_macro_mock"
+name = "example_source"
 version = "0.1.0"
 edition = "2021"
 

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use ebi_source::prelude::{SourceError, SourceErrorSerialized};
+use ebi_source::error::SourceError;
 
 #[derive(Error, Debug)]
 pub enum EbiError {
@@ -11,13 +11,13 @@ pub enum EbiError {
     DuplicatedSource,
     #[error("INVALID_SOURCE")]
     InvalidSource,
+    #[error("SOURCE_ERROR::{0}")]
+    SourceError(String),
 
     #[error("COULD_NOT_LOAD_LIB")]
     LoadLib,
     #[error("COULD_NOT_LOAD_FUNCTION")]
     LoadFunction,
-    #[error("SOURCE_RETURNED_ERRORED_RESPONSE")]
-    SourceResponseError(SourceErrorSerialized),
 
     #[error("COULD_NOT_SERIALIZE_LIB_RESPONSE")]
     SerializeResponse,
@@ -50,6 +50,8 @@ impl std::convert::From<SourceError> for EbiError {
             SourceError::Serialize => todo!(),
             SourceError::InvalidIdentifier => todo!(),
             SourceError::ABINullConversion => Self::AbiSerialization,
+            SourceError::InvalidSource => todo!(),
+            SourceError::ABIResult(_) => todo!(),
         }
     }
 }

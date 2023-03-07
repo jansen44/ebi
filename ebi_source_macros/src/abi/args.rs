@@ -5,8 +5,8 @@ pub trait GenArgsExt {
         quote::quote! {}
     }
 
-    fn args_parsing(&self) -> TokenStream {
-        quote::quote! {}
+    fn return_type(&self) -> TokenStream {
+        quote::quote! { ebi_source::abi::primitives::ABIResultArray }
     }
 
     fn call(&self, name: &TokenStream) -> TokenStream {
@@ -14,29 +14,45 @@ pub trait GenArgsExt {
     }
 }
 
-pub struct NonArgFunctions;
-impl GenArgsExt for NonArgFunctions {}
+pub struct SourceFunction;
+
+impl GenArgsExt for SourceFunction {
+    fn return_type(&self) -> TokenStream {
+        quote::quote! { ebi_source::abi::source::source_info::ABISourceInfoOutput }
+    }
+
+    fn call(&self, name: &TokenStream) -> TokenStream {
+        quote::quote! {
+            #name().into()
+        }
+    }
+}
+
+pub struct MangaListFunction;
+
+impl GenArgsExt for MangaListFunction {
+    fn call(&self, name: &TokenStream) -> TokenStream {
+        quote::quote! {
+            #name().into()
+        }
+    }
+}
 
 pub struct ChapterListFunction;
 
 impl GenArgsExt for ChapterListFunction {
     fn args_list(&self) -> TokenStream {
-        quote::quote! { manga: ABIChapterListInput }
-    }
-
-    fn args_parsing(&self) -> TokenStream {
-        quote::quote! {
-            let (manga_identifier, manga_url) = unsafe {
-                (CString::from_raw(manga.manga_identifier), CString::from_raw(manga.manga_url))
-            };
-
-            let manga_identifier = manga_identifier.to_string_lossy();
-            let manga_url = manga_url.to_string_lossy();
-        }
+        quote::quote! { manga: ebi_source::abi::chapter::chapter_list::ABIChapterListInput }
     }
 
     fn call(&self, name: &TokenStream) -> TokenStream {
-        quote::quote! { #name(manga_identifier.into_owned(), manga_url.into_owned()) }
+        quote::quote! {
+            // TODO: remove unwrap
+            let identifier = manga.identifier.try_into().unwrap();
+            let url = manga.url.try_into().unwrap();
+
+            #name(identifier, url).into()
+        }
     }
 }
 
@@ -44,21 +60,18 @@ pub struct ChapterPageListFunction;
 
 impl GenArgsExt for ChapterPageListFunction {
     fn args_list(&self) -> TokenStream {
-        quote::quote! { chapter: ABIChapterPageListInput }
-    }
-
-    fn args_parsing(&self) -> TokenStream {
-        quote::quote! {
-            let (chapter_url, manga_identifier) = unsafe {
-                (CString::from_raw(chapter.chapter_url), CString::from_raw(chapter.manga_identifier))
-            };
-
-            let chapter_url = chapter_url.to_string_lossy();
-            let manga_identifier = manga_identifier.to_string_lossy();
-        }
+        quote::quote! { chapter: ebi_source::abi::chapter::chapter_page_list::ABIChapterPageListInput }
     }
 
     fn call(&self, name: &TokenStream) -> TokenStream {
-        quote::quote! { #name(chapter.chapter, chapter_url.into_owned(), manga_identifier.into_owned()) }
+        quote::quote! {
+            // TODO: remove unwrap
+            let url = chapter.chapter_url.try_into().unwrap();
+            let manga = chapter.manga.try_into().unwrap();
+
+            let chapter = chapter.chapter;
+
+            #name(chapter, url, manga).into()
+        }
     }
 }

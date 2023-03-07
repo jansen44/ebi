@@ -3,15 +3,14 @@ use serde::{Deserialize, Serialize};
 pub mod abi;
 pub mod error;
 pub mod locale;
-pub mod prelude;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Chapter {
-    pub chapter: u16,
+    pub chapter: u32,
     pub title: String,
     pub url: String,
-    pub manga_identifier: String,
-    pub source_identifier: String,
+    pub manga: String,
+    pub source: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -22,7 +21,7 @@ pub struct Manga {
     pub url: String,
     pub genres: Vec<String>,
     pub description: Option<String>,
-    pub source_identifier: String,
+    pub source: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -36,9 +35,13 @@ pub struct Source {
 pub trait SourceLoader {
     type Error;
 
-    fn source(&self) -> Result<Source, Self::Error>;
+    // Source functions
+    fn source_info(&self) -> Result<Source, Self::Error>;
 
+    // Manga functions
     fn manga_list(&self) -> Result<Vec<Manga>, Self::Error>;
+
+    // Chapter functions
     fn chapter_list(&self, manga: &Manga) -> Result<Vec<Chapter>, Self::Error>;
     fn chapter_page_list(&self, chapter: &Chapter) -> Result<Vec<String>, Self::Error>;
 }

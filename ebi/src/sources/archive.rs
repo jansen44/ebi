@@ -20,7 +20,7 @@ impl std::convert::From<&SourceManager> for SourceArchiver {
 
 impl SourceArchiver {
     pub fn save_manga_cover(&self, manga: &EbiManga) -> Result<EbiManga, EbiError> {
-        let manga_path = self.manga_path(&manga.source_identifier, &manga.identifier);
+        let manga_path = self.manga_path(&manga.source, &manga.identifier);
         std::fs::create_dir_all(&manga_path)?;
 
         let find_patt = format!("/{MANGA_COVER_FILE_NAME}.");
@@ -74,8 +74,7 @@ impl SourceArchiver {
     }
 
     fn chapter_path(&self, chapter: &EbiChapter) -> PathBuf {
-        let mut chapter_path =
-            self.manga_path(&chapter.source_identifier, &chapter.manga_identifier);
+        let mut chapter_path = self.manga_path(&chapter.source, &chapter.manga);
         chapter_path.push(format!("{}", chapter.chapter));
         chapter_path
     }

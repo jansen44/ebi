@@ -1,7 +1,10 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::ToTokens;
 
-use super::args::{ChapterListFunction, ChapterPageListFunction, GenArgsExt, NonArgFunctions};
+use super::args::GenArgsExt;
+use super::args::{
+    ChapterListFunction, ChapterPageListFunction, MangaListFunction, SourceFunction,
+};
 
 pub struct FnGenerator {
     name: TokenStream,
@@ -13,8 +16,12 @@ impl FnGenerator {
         self.gen.args_list()
     }
 
-    pub fn args_parsing(&self) -> TokenStream {
-        self.gen.args_parsing()
+    // pub fn args_parsing(&self) -> TokenStream {
+    //     self.gen.args_parsing()
+    // }
+
+    pub fn return_type(&self) -> TokenStream {
+        self.gen.return_type()
     }
 
     pub fn call(&self) -> TokenStream {
@@ -24,7 +31,7 @@ impl FnGenerator {
 }
 
 pub enum AbiFns {
-    Source,
+    SourceInfo,
     MangaList,
     ChapterList,
     ChapterPageList,
@@ -35,7 +42,7 @@ impl TryFrom<&Ident> for AbiFns {
 
     fn try_from(name: &Ident) -> Result<Self, Self::Error> {
         match name.to_string().as_str() {
-            "source" => Ok(Self::Source),
+            "source_info" => Ok(Self::SourceInfo),
             "manga_list" => Ok(Self::MangaList),
             "chapter_list" => Ok(Self::ChapterList),
             "chapter_page_list" => Ok(Self::ChapterPageList),
@@ -52,7 +59,8 @@ impl AbiFns {
         let generator: Box<dyn GenArgsExt> = match abi_func {
             Self::ChapterList => Box::new(ChapterListFunction {}),
             Self::ChapterPageList => Box::new(ChapterPageListFunction {}),
-            _ => Box::new(NonArgFunctions {}),
+            Self::SourceInfo => Box::new(SourceFunction {}),
+            Self::MangaList => Box::new(MangaListFunction {}),
         };
 
         Ok(FnGenerator {

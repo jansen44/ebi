@@ -72,6 +72,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "example_source"
+version = "0.1.0"
+dependencies = [
+ "ebi_source",
+ "ebi_source_macros",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -98,14 +106,6 @@ checksum = "e14ddfc70884202db2244c223200c204c2bda1bc6e0998d11b5e024d657209e6"
 dependencies = [
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "invalid_source_macro_mock"
-version = "0.1.0"
-dependencies = [
- "ebi_source",
- "ebi_source_macros",
 ]
 
 [[package]]
@@ -365,14 +365,6 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
-]
-
-[[package]]
-name = "valid_source_macro_mock"
-version = "0.1.0"
-dependencies = [
- "ebi_source",
- "ebi_source_macros",
 ]
 
 [[package]]
